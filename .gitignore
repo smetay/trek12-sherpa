@@ -1,0 +1,33 @@
+# dependencies
+node_modules/
+
+# build output
+dist/
+dev-dist/
+coverage/
+.vitest/
+*.tsbuildinfo
+
+# bench results & caches
+bench-results/
+.cache/
+
+# env & secrets
+.env
+.env.*
+!.env.example
+
+# copyrighted reference material (sheet photos, rulebook PDFs) — never commit
+reference/
+
+# test artefacts
+playwright-report/
+test-results/
+
+# OS / editors / local tooling
+.DS_Store
+*.log
+.idea/
+.vscode/*
+!.vscode/extensions.json
+.claude/settings.local.json
