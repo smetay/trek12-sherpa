@@ -40,3 +40,14 @@ link rule. Machine: Apple Silicon Mac, Node 24.13, 2026-09-22 (solver 0.1.0).
 
 The M2 gate was 3 k heuristic rollouts/s per worker on a phone; the desktop figure leaves a wide margin.
 Phone numbers come from the in-app `#/perf` page.
+
+## Monte-Carlo advisor — 40 paired games per sheet
+
+`pnpm bench compare --policy heuristic,mc288 --games 40 --seed 100` (solver 0.2.0; `mc288` = root
+race with up to 288 rollouts per surviving candidate and the exact endgame; see `docs/SOLVER.md`).
+
+| Sheet | heuristic | mc288 | Δ ± SE |
+|---|---:|---:|---:|
+| Dunai (65+) | 64.3 | **89.0** | +24.7 ± 2.5 |
+| Kagkot (70+) | 61.4 | **83.2** | +21.8 ± 2.2 |
+| Dhaulagiri (75+) | 58.5 | **83.8** | +25.3 ± 2.7 |
