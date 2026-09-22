@@ -1,4 +1,4 @@
-import { type CompiledMap, isGameOver, mix32, type State } from '@trek12/engine'
+import { type CompiledMap, coreOf, isGameOver, mix32, ROLL_COUNT, type State } from '@trek12/engine'
 import { advise, heuristicPolicy, type RankedMove, type SolverPool } from '@trek12/solver'
 import { useEffect, useRef, useState } from 'react'
 import { createSolverPool, defaultPoolSize } from './solverPool.ts'
@@ -87,4 +87,47 @@ export function useAdvice(
   }, [map, state, historyLength, y, r, thinkMs, workers, nonce])
 
   return advice
+}
+
+export type Estimate = { mean: number; pSummit: number } | null
+
+/**
+ * Expected final score of the current position before the dice are rolled: heuristic rollouts from
+ * the position itself (first roll stratified over the 36 outcomes). Same scale as the advice means.
+ */
+export function useEstimate(
+  map: CompiledMap | undefined,
+  state: State | undefined,
+  historyLength: number,
+  workers: number,
+): Estimate {
+  const [estimate, setEstimate] = useState<Estimate>(null)
+  useEffect(() => {
+    if (!map || !state || isGameOver(map, state)) {
+      setEstimate(null)
+      return
+    }
+    let cancelled = false
+    const p = getPool(map, workers)
+    const seed = mix32(historyLength, 0x0e57, map.n)
+    p.rollouts(coreOf(map, state), seed, 0, 360, heuristicPolicy.name)
+      .then((scores) => {
+        if (cancelled) return
+        let sum = 0
+        let above = 0
+        const summit36 = map.def.summit * ROLL_COUNT
+        for (const v of scores) {
+          sum += v
+          if (v >= summit36) above++
+        }
+        setEstimate({ mean: sum / (scores.length * ROLL_COUNT), pSummit: above / scores.length })
+      })
+      .catch(() => {
+        if (!cancelled) setEstimate(null)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [map, state, historyLength, workers])
+  return estimate
 }

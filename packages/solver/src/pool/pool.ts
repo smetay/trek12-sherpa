@@ -82,6 +82,21 @@ export class SolverPool {
     })
   }
 
+  /** Solves `moves` exactly from the root state `core`; the worker shares one memo across them. */
+  exact(core: Int32Array, moves: Int32Array): Promise<Float64Array> {
+    const job = this.nextJob++
+    return new Promise((resolve, reject) => {
+      this.queue.push({
+        req: { t: 'exact', job, core, moves },
+        resolve: (res) => {
+          if (res.t === 'exact') resolve(res.values)
+          else reject(new Error(res.t === 'error' ? res.message : 'unexpected response'))
+        },
+      })
+      this.pump()
+    })
+  }
+
   /** Drops queued work and replaces busy workers so a cancelled decision stops consuming CPU. */
   cancelAll(): void {
     this.queue.length = 0

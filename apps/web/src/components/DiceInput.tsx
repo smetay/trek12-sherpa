@@ -10,9 +10,16 @@ const RED = [1, 2, 3, 4, 5, 6]
 
 type Tone = 'yellow' | 'red'
 
-const FACE_ON: Record<Tone, string> = {
-  yellow: 'bg-accent text-accent-ink border-accent',
-  red: 'bg-die-red text-white border-die-red',
+/** Faces look like the real dice: yellow with dark digits, red with white digits. */
+const FACE: Record<Tone, { off: string; on: string }> = {
+  yellow: {
+    off: 'bg-accent/35 text-ink border-accent/70',
+    on: 'bg-accent text-accent-ink border-ink ring-2 ring-ink',
+  },
+  red: {
+    off: 'bg-die-red/30 text-ink border-die-red/70',
+    on: 'bg-die-red text-white border-ink ring-2 ring-ink',
+  },
 }
 
 function Row({
@@ -31,7 +38,7 @@ function Row({
   return (
     <fieldset className="m-0 border-0 p-0">
       <legend className="mb-1 text-sm text-muted">{label}</legend>
-      <div className="grid grid-cols-6 gap-1.5">
+      <div className="grid grid-cols-6 gap-2">
         {values.map((v) => (
           <button
             key={v}
@@ -39,7 +46,7 @@ function Row({
             aria-pressed={selected === v}
             onClick={() => onPick(v)}
             className={`h-12 rounded-lg border-2 text-xl font-bold ${
-              selected === v ? FACE_ON[tone] : 'border-line bg-surface text-ink'
+              selected === v ? FACE[tone].on : FACE[tone].off
             }`}
           >
             {v}

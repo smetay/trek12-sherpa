@@ -15,11 +15,12 @@ phone at the game table.
 | **M3** Solver | Monte-Carlo root race with common random numbers, successive halving, exact endgame, worker pool; +22 to +25 points over the heuristic (`docs/SOLVER.md`) |
 | **M4** Game UI | Dice input, ranked advice with honest ties, manual moves with link choice, undo/redo, persistence, FR/EN, Playwright smoke test |
 | **M5** v1.0.0 | Sheet heatmap (value to write + points lost in every playable circle, ★ on the best), "score sheet" light/dark theme with a legibility-first typeface, collapsed dice, accessibility pass, README |
+| **v1.1.0** | Solver: exact last turn inside every rollout, exact endgame extended to 3 empty cells (last-ply table + memoisation, spread over workers), cross-entropy weight tuning (`pnpm bench tune`). UI: expected final score and summit chance shown throughout the game, tap an operation to see where it is best (with each operation's cost in the choice table), dice drawn like the real ones |
 
 ## Next
 
-1. **Stronger, faster solver** — end every rollout with the exact expectation of the last turn; make
-   3-empty positions exact; tune the rollout policy by cross-entropy on generated maps.
+1. **Stronger solver** — exact solve at 4 empty cells within a node budget; tune the rollout policy
+   against the Monte-Carlo objective itself rather than the greedy proxy.
 2. **Post-game review** — replay a finished game and show the points lost at each turn.
 3. **Jev experiment (M3.5)** — bounded, pre-registered benchmark of TypeSafe AI's Jev as a move picker
    (bench only, never shipped). Needs an API key in a local `.env`.

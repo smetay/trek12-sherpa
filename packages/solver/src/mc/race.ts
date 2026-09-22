@@ -4,9 +4,10 @@ import {
   generateMoves,
   MAX_MOVES,
   type Move,
+  ROLL_COUNT,
   type State,
 } from '@trek12/engine'
-import { EXACT_EMPTY_LIMIT, emptyCells, exactRootValues } from '../exact/endgame.ts'
+import { emptyCells, exactRootValues, useExact } from '../exact/endgame.ts'
 import type { RolloutPolicy } from '../policy/types.ts'
 import { crnRolloutScores } from './crn.ts'
 
@@ -16,12 +17,15 @@ export type RaceOptions = {
   maxRollouts?: number
   /** Score threshold for P(score >= summit) (default: the map's). */
   summit?: number
+  /** Leave the exact endgame to the caller (`setExact`), e.g. to spread it over workers. */
+  deferExact?: boolean
 }
 
 export type Candidate = {
   move: Move
   /** State right after the move (before the next roll). */
   child: State
+  /** 36 × the value of each rollout (integers). */
   scores: Int32Array
   n: number
   alive: boolean
@@ -53,10 +57,15 @@ const rootMoves = new Int32Array(MAX_MOVES)
  * 36·2^round, and the ones that are clearly worse than the leader are eliminated (successive halving).
  * The race is driven from outside (`plan` → compute chunks anywhere → `ingest` → `finishRound`), so
  * the same code runs single-threaded, in Node workers or in Web Workers, with identical results.
+ * Near the end of the game the candidates are solved exactly instead (`exactMode`).
  */
 export class Race {
   readonly candidates: Candidate[] = []
+  /** Root moves, aligned with `candidates`. */
+  readonly moves: Int32Array
   readonly exactMode: boolean
+  /** True while an exact race still waits for its values (`deferExact`). */
+  exactPending: boolean
   round = 0
   done = false
   private readonly maxRollouts: number
@@ -85,26 +94,36 @@ export class Race {
     this.maxRollouts = options.maxRollouts ?? 8192
     this.summit = options.summit ?? map.def.summit
     const count = generateMoves(map, state, y, r, rootMoves)
+    this.moves = rootMoves.slice(0, count)
     for (let i = 0; i < count; i++) {
       const child = state.slice()
-      applyMove(map, child, rootMoves[i])
+      applyMove(map, child, this.moves[i])
       this.candidates.push({
-        move: rootMoves[i],
+        move: this.moves[i],
         child,
         scores: new Int32Array(64),
         n: 0,
         alive: true,
       })
     }
-    this.exactMode = count > 0 && emptyCells(map, this.candidates[0].child) <= EXACT_EMPTY_LIMIT
-    if (this.exactMode) {
-      const values = exactRootValues(map, state, rootMoves, count)
-      this.candidates.forEach((c, i) => {
-        c.exact = values[i]
-      })
-      this.done = true
-    }
+    this.exactMode = count > 0 && useExact(emptyCells(map, this.candidates[0].child), count)
+    this.exactPending = this.exactMode
+    if (this.exactMode && !options.deferExact) this.computeExact()
     if (count <= 1) this.done = true
+  }
+
+  /** Solves every candidate exactly, in-process. */
+  computeExact(): void {
+    this.setExact(exactRootValues(this.map, this.state, this.moves, this.moves.length))
+  }
+
+  /** Installs exact values computed elsewhere (one per candidate, in order). */
+  setExact(values: ArrayLike<number>): void {
+    this.candidates.forEach((c, i) => {
+      c.exact = values[i]
+    })
+    this.exactPending = false
+    this.done = true
   }
 
   /** Number of rollouts each surviving candidate gets in the coming round. */
@@ -195,6 +214,7 @@ export class Race {
 
   /** Runs the whole race in-process. */
   runToEnd(): RankedMove[] {
+    if (this.exactPending) this.computeExact()
     while (!this.done) {
       for (const chunk of this.plan(this.roundSize())) this.ingest(chunk, this.compute(chunk))
       this.finishRound()
@@ -205,6 +225,7 @@ export class Race {
   ranking(): RankedMove[] {
     const cs = this.candidates
     if (this.exactMode) {
+      if (this.exactPending) return []
       const best = Math.max(...cs.map((c) => c.exact ?? -Infinity))
       return cs
         .map((c) => ({
@@ -222,13 +243,15 @@ export class Race {
         .sort((a, b) => b.mean - a.mean)
     }
     const measured = cs.filter((c) => c.n > 0)
+    if (measured.length === 0) return []
     const best = measured.reduce((b, c) => (mean(c) > mean(b) ? c : b), measured[0])
+    const summit36 = this.summit * ROLL_COUNT
     return cs
       .map((c) => {
         const { d, se } = c === best || c.n === 0 ? { d: 0, se: 0 } : pairedDiff(c, best)
         const ci = 1.96 * se
         let above = 0
-        for (let i = 0; i < c.n; i++) if (c.scores[i] >= this.summit) above++
+        for (let i = 0; i < c.n; i++) if (c.scores[i] >= summit36) above++
         return {
           move: c.move,
           n: c.n,
@@ -246,27 +269,28 @@ export class Race {
   }
 }
 
+/** Mean value in points (scores are stored × 36). */
 function mean(c: Candidate): number {
   let sum = 0
   for (let i = 0; i < c.n; i++) sum += c.scores[i]
-  return sum / c.n
+  return sum / (c.n * ROLL_COUNT)
 }
 
 function variance(c: Candidate): number {
   const m = mean(c)
   let acc = 0
-  for (let i = 0; i < c.n; i++) acc += (c.scores[i] - m) ** 2
+  for (let i = 0; i < c.n; i++) acc += (c.scores[i] / ROLL_COUNT - m) ** 2
   return acc / (c.n - 1)
 }
 
-/** Mean and standard error of (a − b) over the rollouts both candidates have. */
+/** Mean and standard error of (a − b) in points over the rollouts both candidates have. */
 function pairedDiff(a: Candidate, b: Candidate): { d: number; se: number } {
   const n = Math.min(a.n, b.n)
   if (n === 0) return { d: 0, se: 0 }
   let sum = 0
   let sumSq = 0
   for (let i = 0; i < n; i++) {
-    const d = a.scores[i] - b.scores[i]
+    const d = (a.scores[i] - b.scores[i]) / ROLL_COUNT
     sum += d
     sumSq += d * d
   }

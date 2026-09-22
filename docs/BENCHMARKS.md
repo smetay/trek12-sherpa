@@ -21,8 +21,8 @@ link rule. Machine: Apple Silicon Mac, Node 24.13, 2026-09-22 (solver 0.1.0).
 
 - `random`: uniform over legal moves. `greedy`: best immediate score change, random tie-break.
 - `heuristic`: greedy plus expected-value features (orphan rescue, open chain ends, zone growth, tick
-  scarcity) with the default weights in `packages/solver/src/policy/heuristic.ts`. Each feature was
-  checked in isolation on 400 paired games (Kagkot / Dunai): rescue +4.1 / +4.4, chain ends +5.0 / +4.6,
+  scarcity) with the v1.0.0 hand-set weights (now `heuristic-v1`). Each feature was checked in
+  isolation on 400 paired games (Kagkot / Dunai): rescue +4.1 / +4.4, chain ends +5.0 / +4.6,
   ticks +2.5 / +3.1, zone +1.6 / +1.5; the danger term is currently a no-op and kept as a placeholder.
 - A lesson worth recording: with all feature weights at zero the heuristic scored **13 points below**
   greedy until ties were broken at random — always taking the first best candidate favours the lowest
@@ -51,3 +51,39 @@ race with up to 288 rollouts per surviving candidate and the exact endgame; see 
 | Dunai (65+) | 64.3 | **89.0** | +24.7 ± 2.5 |
 | Kagkot (70+) | 61.4 | **83.2** | +21.8 ± 2.2 |
 | Dhaulagiri (75+) | 58.5 | **83.8** | +25.3 ± 2.7 |
+
+## Weight tuning (solver 0.3.0)
+
+`pnpm bench tune --map dunai,kagkot,dhaulagiri --games 800 --pop 24 --elite 6 --gens 30 --seed 1`
+
+Cross-entropy method over the six heuristic weights: 24 candidates per generation play the same 800
+seeds on each of the three sheets (common random numbers), the best 6 move the mean and spread, seeds
+change every generation. 30 generations took 141 s.
+
+| Weight | v1.0.0 (hand-set) | tuned |
+|---|---:|---:|
+| rescue | 0.8 | 1.25 |
+| chainEnd | 0.6 | 0.70 |
+| zone | 0.5 | 0.34 |
+| ticks | 1.0 | 1.43 |
+| danger | 0.8 | 0.83 (no-op) |
+| noise | 0 | 0.17 |
+
+Held-out check (3 000 games per sheet, seeds never seen during tuning, paired): greedy heuristic
+**63.2 → 64.7 points** (+1.6). On 40 paired games per sheet the tuned greedy player gains +3.1 (Dunai),
++4.7 (Kagkot) and +4.8 (Dhaulagiri) points over `heuristic-v1`.
+
+## Advisor v1.1 — 40 paired games per sheet
+
+`pnpm bench compare --policy heuristic-v1,heuristic,mc288@heuristic-v1,mc288 --games 40 --seed 100`
+
+| Sheet | heuristic-v1 | heuristic (tuned) | mc288 with v1 rollouts | mc288 with tuned rollouts |
+|---|---:|---:|---:|---:|
+| Dunai (65+) | 64.3 | 67.5 | **91.0** | 88.1 |
+| Kagkot (70+) | 61.4 | 66.0 | 84.5 | **84.8** |
+| Dhaulagiri (75+) | 58.5 | 63.2 | 83.6 | **84.8** |
+
+Both advisors use the exact last ply in rollouts and the 3-empty exact endgame introduced in solver
+0.3.0 (v1.0.0 scored 89.0 / 83.2 / 83.8 with 2-empty exactness and sampled last plies). The rollout
+weights make no measurable difference to the advisor at this sample size (±4–5 points at 95 %): the
+noise that helps a greedy player explore only adds variance inside a search.

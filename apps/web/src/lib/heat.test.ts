@@ -1,6 +1,6 @@
 import type { RankedMove } from '@trek12/solver'
 import { describe, expect, it } from 'vitest'
-import { cellHeats, levelFor } from './heat.ts'
+import { cellHeats, levelFor, opHeats } from './heat.ts'
 
 const rm = (move: number, mean: number, extra: Partial<RankedMove> = {}): RankedMove => ({
   move,
@@ -51,5 +51,26 @@ describe('cell heat', () => {
       (m) => m,
     )
     expect(heats.get(2)).toMatchObject({ level: 'near', loss: 0.5, exact: true })
+  })
+
+  it('filters cells by a predicate while keeping losses relative to the overall best', () => {
+    const ranking = [rm(11, 70), rm(21, 68), rm(12, 69.6, { tied: true }), rm(22, 60)]
+    const heats = cellHeats(
+      ranking,
+      (m) => m % 10,
+      (m) => Math.floor(m / 10) === 2,
+    )
+    expect([...heats.keys()].sort()).toEqual([1, 2])
+    expect(heats.get(1)).toMatchObject({ move: 21, level: 'mid', loss: 2 })
+    expect(heats.get(2)).toMatchObject({ move: 22, level: 'far', loss: 10 })
+  })
+
+  it('reports the best move of each operation', () => {
+    const ranking = [rm(11, 70), rm(21, 68), rm(12, 69.6, { tied: true }), rm(22, 60), rm(31, 55)]
+    const per = opHeats(ranking, (m) => Math.floor(m / 10) - 1)
+    expect(per[0]).toMatchObject({ move: 11, level: 'best' })
+    expect(per[1]).toMatchObject({ move: 21, level: 'mid', loss: 2 })
+    expect(per[2]).toMatchObject({ move: 31, level: 'far', loss: 15 })
+    expect(per[3]).toBeUndefined()
   })
 })

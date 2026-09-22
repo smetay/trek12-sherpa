@@ -5,10 +5,13 @@ import {
   generateMoves,
   isGameOver,
   MAX_MOVES,
+  META_FILLED,
   mix32,
   Rng,
+  ROLL_COUNT,
   type State,
 } from '@trek12/engine'
+import { lastPlyValue36 } from '../exact/endgame.ts'
 import type { RolloutPolicy } from '../policy/types.ts'
 
 /**
@@ -52,8 +55,12 @@ export function crnRoll(seed: number, i: number, turn: number): number {
 
 const moves = new Int32Array(MAX_MOVES)
 
-/** Plays `s` (in place) to the end with the CRN dice of rollout `i`; returns the final score. */
-export function crnRollout(
+/**
+ * Plays `s` (in place) with the CRN dice of rollout `i` until one circle is left, then takes the
+ * exact expectation of the last turn. Returns 36 × the final value — an integer, so sums are exact
+ * and independent of how the work was split across workers.
+ */
+export function crnRollout36(
   map: CompiledMap,
   s: State,
   policy: RolloutPolicy,
@@ -63,16 +70,17 @@ export function crnRollout(
   const rng = new Rng(mix32(seed, i, 0x7ae))
   let turn = 0
   while (!isGameOver(map, s)) {
+    if (map.n - s[map.oMeta + META_FILLED] === 1) return lastPlyValue36(map, s)
     const roll = crnRoll(seed, i, turn++)
     const y = (roll / 6) | 0
     const r = (roll % 6) + 1
     const count = generateMoves(map, s, y, r, moves)
     applyMove(map, s, moves[policy.choose(map, s, y, r, moves, count, rng)])
   }
-  return currentScore(map, s)
+  return currentScore(map, s) * ROLL_COUNT
 }
 
-/** Scores of rollouts `from .. from+count` of `child` (a state right after a root move). */
+/** 36 × scores of rollouts `from .. from+count` of `child` (a state right after a root move). */
 export function crnRolloutScores(
   map: CompiledMap,
   child: State,
@@ -85,7 +93,7 @@ export function crnRolloutScores(
   const scratch = new Int32Array(child.length)
   for (let k = 0; k < count; k++) {
     scratch.set(child)
-    out[k] = crnRollout(map, scratch, policy, seed, from + k)
+    out[k] = crnRollout36(map, scratch, policy, seed, from + k)
   }
   return out
 }

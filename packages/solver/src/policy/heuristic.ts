@@ -27,13 +27,28 @@ export type HeuristicWeights = {
   noise: number
 }
 
-export const DEFAULT_WEIGHTS: HeuristicWeights = {
+/** Hand-set weights shipped in v1.0.0, kept as a comparison baseline (`heuristic-v1`). */
+export const V1_WEIGHTS: HeuristicWeights = {
   rescue: 0.8,
   chainEnd: 0.6,
   zone: 0.5,
   ticks: 1.0,
   danger: 0.8,
   noise: 0.0,
+}
+
+/**
+ * Current weights: cross-entropy search (`pnpm bench tune`, 30 generations × 24 candidates × 800
+ * games on the three sheets, seed 1), then rounded. Held-out: 63.2 → 64.7 points for the greedy
+ * heuristic. See docs/BENCHMARKS.md.
+ */
+export const DEFAULT_WEIGHTS: HeuristicWeights = {
+  rescue: 1.25,
+  chainEnd: 0.7,
+  zone: 0.34,
+  ticks: 1.43,
+  danger: 0.83,
+  noise: 0.17,
 }
 
 const TICK_BASE = new Float64Array(OP_COUNT)
@@ -132,3 +147,4 @@ export function makeHeuristicPolicy(
 }
 
 export const heuristicPolicy = makeHeuristicPolicy()
+export const heuristicV1Policy = makeHeuristicPolicy(V1_WEIGHTS, 'heuristic-v1')

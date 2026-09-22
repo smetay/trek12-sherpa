@@ -7,7 +7,9 @@ import {
   isGameOver,
   MAX_MOVES,
   moveCell,
+  moveOp,
   OP_COUNT,
+  OP_NAMES,
   RESULTS,
   ROLL_COUNT,
   rollIndex,
@@ -17,13 +19,13 @@ import {
 } from '@trek12/engine'
 import { useMemo, useState } from 'react'
 import { AdviceList, HeatLegend, moveTitle } from '../components/AdviceList.tsx'
-import { ChoiceTable } from '../components/ChoiceTable.tsx'
+import { ChoiceTable, type OpVerdict } from '../components/ChoiceTable.tsx'
 import { DiceChip, DiceInput } from '../components/DiceInput.tsx'
 import { type CellVisual, MapSvg, wash } from '../components/MapSvg.tsx'
-import { useAdvice } from '../lib/advice.ts'
-import { lossText, pct } from '../lib/format.ts'
+import { useAdvice, useEstimate } from '../lib/advice.ts'
+import { lossText, num, pct } from '../lib/format.ts'
 import { cellLabel, describeLinks, linksOf, useGame, viewMove } from '../lib/game.ts'
-import { cellHeats, HEAT_COLOR } from '../lib/heat.ts'
+import { cellHeats, HEAT_COLOR, opHeats } from '../lib/heat.ts'
 import { DICT, type Dict } from '../lib/i18n.ts'
 import { href } from '../lib/router.ts'
 import { useStore } from '../lib/store.ts'
@@ -48,11 +50,13 @@ export function PlayPage() {
   const [r, setR] = useState<number | null>(null)
   const [selected, setSelected] = useState<number | null>(null)
   const [pickedCell, setPickedCell] = useState<number | null>(null)
+  const [pickedOp, setPickedOp] = useState<number | null>(null)
   const [nonce, setNonce] = useState(0)
 
   const historyLength = record?.history.length ?? 0
   const over = game ? isGameOver(game.map, game.state) : false
   const advice = useAdvice(game?.map, game?.state, historyLength, y, r, thinkMs, workers, nonce)
+  const estimate = useEstimate(game?.map, game?.state, historyLength, workers)
 
   // Every legal move for the current dice (the advisor ranks exactly these).
   const legal = useMemo(() => {
@@ -62,7 +66,11 @@ export function PlayPage() {
     return Array.from(out.subarray(0, count))
   }, [game, y, r, over])
 
-  const heats = useMemo(() => cellHeats(advice.ranking, moveCell), [advice.ranking])
+  const heats = useMemo(
+    () => cellHeats(advice.ranking, moveCell, (m) => pickedOp === null || moveOp(m) === pickedOp),
+    [advice.ranking, pickedOp],
+  )
+  const perOp = useMemo(() => opHeats(advice.ranking, moveOp), [advice.ranking])
 
   if (!record || !game) {
     return (
@@ -82,24 +90,35 @@ export function PlayPage() {
   const diceSet = y !== null && r !== null
   const measured = advice.ranking.filter((m) => m.exact || m.n > 0)
   const top = measured[0]
-  const pickedBest = pickedCell === null ? undefined : heats.get(pickedCell)?.move
-  const chosenMove = selected ?? pickedBest ?? top?.move ?? null
+  const filtered = measured.filter(
+    (m) =>
+      (pickedOp === null || moveOp(m.move) === pickedOp) &&
+      (pickedCell === null || moveCell(m.move) === pickedCell),
+  )
+  const chosenMove = selected ?? filtered[0]?.move ?? top?.move ?? null
   const chosen =
     chosenMove !== null && legal.includes(chosenMove) ? viewMove(map, chosenMove) : null
   const results = diceSet
     ? Array.from({ length: OP_COUNT }, (_, op) => RESULTS[op * ROLL_COUNT + rollIndex(y, r)])
     : undefined
-  const legalCells = new Set(legal.map(moveCell))
+  const legalCells = new Set(
+    legal.filter((m) => pickedOp === null || moveOp(m) === pickedOp).map(moveCell),
+  )
   const rows =
-    pickedCell === null
-      ? measured.slice(0, 3)
-      : measured.filter((m) => moveCell(m.move) === pickedCell)
+    pickedOp === null && pickedCell === null ? filtered.slice(0, 3) : filtered.slice(0, 6)
+  const verdicts: (OpVerdict | undefined)[] = perOp.map((h) =>
+    h ? { level: h.level, loss: h.loss } : undefined,
+  )
+  // Expected final score: the best move's while deciding, the position's own estimate otherwise.
+  const expected = diceSet && top ? top.mean : (estimate?.mean ?? null)
+  const summitChance = diceSet && top && !top.exact ? top.pSummit : (estimate?.pSummit ?? null)
 
   const setDice = (ny: number | null, nr: number | null) => {
     setY(ny)
     setR(nr)
     setSelected(null)
     setPickedCell(null)
+    setPickedOp(null)
   }
 
   const commit = (move: number) => {
@@ -149,6 +168,13 @@ export function PlayPage() {
     }
   }
 
+  const adviceTitle =
+    pickedCell !== null
+      ? `${t.otherOptions} ${pickedCell}`
+      : pickedOp !== null
+        ? `${t.withOp} ${t.options[OP_NAMES[pickedOp]].toLowerCase()}`
+        : t.topAdvice
+
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col gap-3 px-4 pt-3 pb-32">
       <header className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
@@ -165,10 +191,6 @@ export function PlayPage() {
           </p>
         </div>
         <div className="flex items-center justify-end gap-1.5">
-          <p className="mr-1 text-right leading-tight">
-            <span className="block text-xl font-bold">{score}</span>
-            <span className="block text-xs text-muted">{t.pts}</span>
-          </p>
           <button
             type="button"
             onClick={() => {
@@ -195,6 +217,25 @@ export function PlayPage() {
           </button>
         </div>
       </header>
+
+      <dl className="grid grid-cols-3 gap-2 rounded-xl border border-line bg-surface px-3 py-2 text-center leading-tight">
+        <div>
+          <dt className="text-xs text-muted">{t.score}</dt>
+          <dd className="text-xl font-bold">{score}</dd>
+        </div>
+        <div>
+          <dt className="text-xs text-muted">{t.expected}</dt>
+          <dd className="text-xl font-bold" aria-live="polite">
+            {expected === null ? '…' : num(expected, lang)}
+          </dd>
+        </div>
+        <div>
+          <dt className="text-xs text-muted">
+            {t.summitChance} {map.def.summit}+
+          </dt>
+          <dd className="text-xl font-bold">{summitChance === null ? '…' : pct(summitChance)}</dd>
+        </div>
+      </dl>
 
       <MapSvg
         map={map.def}
@@ -223,16 +264,31 @@ export function PlayPage() {
         <DiceInput y={y} r={r} onChange={setDice} labels={{ yellow: t.yellowDie, red: t.redDie }} />
       )}
 
-      <ChoiceTable map={map} state={state} t={t} previewOp={chosen?.opIndex} results={results} />
+      <ChoiceTable
+        map={map}
+        state={state}
+        t={t}
+        lang={lang}
+        previewOp={chosen?.opIndex}
+        results={results}
+        verdicts={diceSet ? verdicts : undefined}
+        pickedOp={pickedOp}
+        onPick={
+          diceSet
+            ? (op) => {
+                setPickedOp(op === pickedOp ? null : op)
+                setSelected(null)
+              }
+            : undefined
+        }
+      />
 
       {!diceSet && <p className="text-center text-muted">{t.enterDice}</p>}
 
       {diceSet && (
         <section className="flex flex-col gap-1" aria-live="polite">
           <div className="flex items-baseline justify-between gap-2">
-            <h2 className="font-semibold">
-              {pickedCell === null ? t.topAdvice : `${t.otherOptions} ${pickedCell}`}
-            </h2>
+            <h2 className="font-semibold">{adviceTitle}</h2>
             <p className="text-sm text-muted">
               {advice.running
                 ? t.thinking
@@ -256,7 +312,7 @@ export function PlayPage() {
             <p className="py-2 text-muted">{t.thinking}</p>
           )}
           <div className="flex items-center justify-between gap-2 text-sm text-muted">
-            <p>{pickedCell === null ? t.tapCell : ''}</p>
+            <p>{pickedCell === null && pickedOp === null ? t.tapCell : ''}</p>
             <button
               type="button"
               onClick={() => setNonce((n) => n + 1)}

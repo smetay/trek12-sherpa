@@ -6,7 +6,7 @@
  */
 export { ENGINE_VERSION } from '@trek12/engine'
 
-export const SOLVER_VERSION = '0.2.0'
+export const SOLVER_VERSION = '0.3.0'
 
 export * from './exact/endgame.ts'
 export * from './mc/advisor.ts'
