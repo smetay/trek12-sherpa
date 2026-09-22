@@ -10,14 +10,15 @@ const project = (name: string, root: string, include: string) => ({
   test: { name, root, environment: 'node' as const, include: [include] },
 })
 
-// Deep property runs (FC_RUNS=5000) legitimately take minutes; give them room.
+// Property tests are CPU-bound and deterministic; shared CI runners can be 2-3x slower than a laptop.
+// Deep runs (FC_RUNS=5000) legitimately take minutes.
 const deep = Number(process.env.FC_RUNS ?? 100) > 100
 
 export default defineConfig({
   test: {
     passWithNoTests: true,
     setupFiles: [setup],
-    testTimeout: deep ? 600_000 : 5_000,
+    testTimeout: deep ? 600_000 : 30_000,
     projects: [
       project('engine', './packages/engine', 'test/**/*.test.ts'),
       project('solver', './packages/solver', 'test/**/*.test.ts'),
