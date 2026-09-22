@@ -1,6 +1,6 @@
 import { compileMap, getMapDef } from '@trek12/engine'
 import { useMemo, useState } from 'react'
-import { MapSvg } from '../components/MapSvg.tsx'
+import { MapSvg, wash } from '../components/MapSvg.tsx'
 import { href } from '../lib/router.ts'
 
 type Verdict = 'ok' | 'ko'
@@ -80,7 +80,7 @@ export function VerifyMapPage({ mapId }: { mapId: string }) {
       <header className="flex items-baseline justify-between">
         <h1 className="text-xl font-semibold">
           Vérifier {def.name}{' '}
-          <span className="text-sm font-normal text-slate-400">
+          <span className="text-sm font-normal text-muted">
             rev {def.rev} · {def.status}
           </span>
         </h1>
@@ -89,7 +89,7 @@ export function VerifyMapPage({ mapId }: { mapId: string }) {
         </a>
       </header>
 
-      <p className="text-sm text-slate-300">
+      <p className="text-sm text-muted">
         Touche une case : ses voisines s'allument. Compare avec la fiche papier (les cases à double
         contour sont les cases dangereuses), puis note chaque case.
       </p>
@@ -97,24 +97,29 @@ export function VerifyMapPage({ mapId }: { mapId: string }) {
       <MapSvg
         map={def}
         showIds
-        className="w-full rounded-2xl bg-slate-900"
+        className="w-full rounded-2xl bg-surface"
         onCellClick={(id) => setSelected(id === selected ? null : id)}
         highlightEdges={selected === null ? [] : neighbours(selected).map((n) => [selected, n])}
         cells={(id) => {
           if (selected === null) {
             return {
               fill:
-                checklist[id] === 'ok' ? '#14532d' : checklist[id] === 'ko' ? '#7f1d1d' : undefined,
+                checklist[id] === 'ok'
+                  ? wash('var(--heat-best)')
+                  : checklist[id] === 'ko'
+                    ? wash('var(--heat-far)')
+                    : undefined,
             }
           }
-          if (id === selected) return { fill: '#b45309', stroke: '#fbbf24' }
-          if (neighbours(selected).includes(id)) return { fill: '#334155', stroke: '#fbbf24' }
+          if (id === selected) return { fill: wash('var(--heat-near)'), ring: true }
+          if (neighbours(selected).includes(id))
+            return { fill: wash('var(--heat-mid)'), stroke: 'var(--heat-mid)' }
           return { dim: true }
         }}
       />
 
       {selected !== null && (
-        <section className="rounded-2xl border border-slate-700 bg-slate-800/60 p-4">
+        <section className="rounded-2xl border border-line bg-surface p-4">
           <p className="text-sm">
             Case <strong>{selected}</strong>
             {def.cells[selected].max < 12 ? ' (dangereuse, max 6)' : ''} touche :{' '}
@@ -124,14 +129,14 @@ export function VerifyMapPage({ mapId }: { mapId: string }) {
             <button
               type="button"
               onClick={() => setVerdict(selected, 'ok')}
-              className="flex-1 rounded-xl bg-emerald-600 px-3 py-3 font-semibold text-white active:bg-emerald-500"
+              className="flex-1 rounded-xl bg-best px-3 py-3 font-semibold text-white"
             >
               Correct
             </button>
             <button
               type="button"
               onClick={() => setVerdict(selected, 'ko')}
-              className="flex-1 rounded-xl bg-rose-700 px-3 py-3 font-semibold text-white active:bg-rose-600"
+              className="flex-1 rounded-xl bg-far px-3 py-3 font-semibold text-white"
             >
               Erreur
             </button>
@@ -139,18 +144,18 @@ export function VerifyMapPage({ mapId }: { mapId: string }) {
         </section>
       )}
 
-      <section className="rounded-2xl border border-slate-700 bg-slate-800/60 p-4 text-sm">
+      <section className="rounded-2xl border border-line bg-surface p-4 text-sm">
         <p>
           {done}/{def.cells.length} cases vérifiées
           {wrong.length > 0 && ` · erreurs signalées : ${wrong.join(', ')}`}
         </p>
-        <pre className="mt-2 whitespace-pre-wrap rounded-lg bg-slate-950 p-2 text-xs text-slate-300">
+        <pre className="mt-2 whitespace-pre-wrap rounded-lg bg-bg p-2 text-xs text-muted">
           {report}
         </pre>
         <button
           type="button"
           onClick={copyReport}
-          className="mt-2 w-full rounded-xl border border-slate-600 px-3 py-2 font-medium active:bg-slate-700"
+          className="mt-2 w-full rounded-xl border border-line px-3 py-2 font-medium active:bg-bg"
         >
           {copied ? 'Copié !' : 'Copier le rapport'}
         </button>

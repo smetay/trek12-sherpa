@@ -1,7 +1,68 @@
 @import "tailwindcss";
+@import "@fontsource-variable/atkinson-hyperlegible-next";
 
+/*
+ * "Score sheet" theme: icy paper, glacier ink, and the heat scale borrowed from the prayer flags
+ * and the two dice (green → die yellow → orange → die red). Night variant follows the phone setting.
+ */
 :root {
-  color-scheme: dark;
+  color-scheme: light;
+  --bg: #e9f0f4;
+  --surface: #f7fafc;
+  --ink: #14283a;
+  --muted: #4b6072;
+  --line: #bccbd6;
+  --cell: #ffffff;
+  --cell-stroke: #6d8597;
+  --cell-strong: #14283a;
+  --rope: #8a4f12;
+  --accent: #f2b705;
+  --accent-ink: #14283a;
+  --die-red: #c8102e;
+  --heat-best: #2e8b57;
+  --heat-near: #e3b505;
+  --heat-mid: #e07a1f;
+  --heat-far: #c8102e;
+  --heat-wash: 30%;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --bg: #0f1e2a;
+    --surface: #172a38;
+    --ink: #e6eef3;
+    --muted: #a3b6c4;
+    --line: #2f4659;
+    --cell: #1c3344;
+    --cell-stroke: #7a92a5;
+    --cell-strong: #e6eef3;
+    --rope: #e8a55a;
+    --accent: #f2b705;
+    --accent-ink: #14283a;
+    --die-red: #e0344f;
+    --heat-best: #3fb57a;
+    --heat-near: #e8c02a;
+    --heat-mid: #f08a2e;
+    --heat-far: #e0344f;
+    --heat-wash: 38%;
+  }
+}
+
+@theme inline {
+  --font-sans: "Atkinson Hyperlegible Next Variable", ui-sans-serif, system-ui, sans-serif;
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-die-red: var(--die-red);
+  --color-best: var(--heat-best);
+  --color-near: var(--heat-near);
+  --color-mid: var(--heat-mid);
+  --color-far: var(--heat-far);
 }
 
 html,
@@ -12,9 +73,23 @@ body,
 
 body {
   margin: 0;
-  background-color: #0f172a;
-  color: #e2e8f0;
+  background-color: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
   padding-top: env(safe-area-inset-top);
   padding-bottom: env(safe-area-inset-bottom);
   -webkit-tap-highlight-color: transparent;
+}
+
+:focus-visible {
+  outline: 3px solid var(--heat-near);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition-duration: 0s;
+    animation-duration: 0s;
+  }
 }

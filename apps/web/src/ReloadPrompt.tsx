@@ -1,8 +1,11 @@
 import { useRegisterSW } from 'virtual:pwa-register/react'
 import { useEffect } from 'react'
+import { DICT } from './lib/i18n.ts'
+import { useStore } from './lib/store.ts'
 
 /** Update toast for the `registerType: 'prompt'` service worker — the user decides when to reload. */
 export function ReloadPrompt() {
+  const t = DICT[useStore((s) => s.lang)]
   const {
     offlineReady: [offlineReady, setOfflineReady],
     needRefresh: [needRefresh, setNeedRefresh],
@@ -26,24 +29,20 @@ export function ReloadPrompt() {
   return (
     <div
       role="status"
-      className="fixed inset-x-4 top-[max(env(safe-area-inset-top),1rem)] z-20 flex items-center gap-3 rounded-2xl border border-slate-600 bg-slate-900 p-4 shadow-xl"
+      className="fixed inset-x-4 top-[max(env(safe-area-inset-top),1rem)] z-20 flex items-center gap-3 rounded-2xl border border-line bg-surface p-4 shadow-xl"
     >
-      <p className="flex-1 text-sm">
-        {needRefresh
-          ? 'Une nouvelle version est disponible.'
-          : "L'application est prête à fonctionner hors-ligne."}
-      </p>
+      <p className="flex-1 text-sm">{needRefresh ? t.updateAvailable : t.offlineReady}</p>
       {needRefresh && (
         <button
           type="button"
           onClick={() => updateServiceWorker(true)}
-          className="rounded-lg bg-amber-500 px-3 py-2 text-sm font-semibold text-slate-950"
+          className="rounded-lg bg-accent px-3 py-2 text-sm font-semibold text-accent-ink"
         >
-          Mettre à jour
+          {t.update}
         </button>
       )}
-      <button type="button" onClick={close} className="px-2 py-2 text-sm text-slate-400">
-        Fermer
+      <button type="button" onClick={close} className="px-2 py-2 text-sm text-muted">
+        {t.close}
       </button>
     </div>
   )

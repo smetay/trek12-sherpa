@@ -16,9 +16,10 @@ test('start a game, get advice, play the recommended move, undo', async ({ page 
     .getByRole('group', { name: /Dé rouge|Red die/ })
     .getByRole('button', { name: '4' })
     .click()
-  const play = page.getByRole('button', { name: /^(Jouer|Play) :/ })
+  const play = page.getByRole('button', { name: /^(Jouer :|Play:)/ })
   await expect(play).toBeVisible({ timeout: 20_000 })
-  await expect(page.getByText(/simulations|rollouts/).first()).toBeVisible()
+  // The sheet shows the heat scale and a best circle.
+  await expect(page.getByText(/meilleur|best/).first()).toBeVisible()
 
   await play.click()
   await expect(page.getByText(/Tour 2\/19|Turn 2\/19/)).toBeVisible()

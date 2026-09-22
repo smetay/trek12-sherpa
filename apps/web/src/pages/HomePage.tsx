@@ -25,7 +25,7 @@ export function HomePage() {
         <img src="logo.svg" alt="" className="size-12 rounded-xl" />
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">{t.appName}</h1>
-          <p className="text-sm text-slate-400">{t.tagline}</p>
+          <p className="text-sm text-muted">{t.tagline}</p>
         </div>
       </header>
 
@@ -46,11 +46,11 @@ export function HomePage() {
               <button
                 type="button"
                 onClick={() => start(map.id)}
-                className="block w-full rounded-2xl border border-slate-700 bg-slate-800/60 p-3 text-left active:bg-slate-700"
+                className="block w-full rounded-2xl border border-line bg-surface p-3 text-left active:bg-bg"
               >
                 <MapSvg map={map} className="w-full" />
                 <p className="mt-2 font-medium">{map.name}</p>
-                <p className="text-xs text-slate-400">{map.summit}+</p>
+                <p className="text-xs text-muted">{map.summit}+</p>
               </button>
             </li>
           ))}
@@ -61,33 +61,30 @@ export function HomePage() {
         {MAPS.filter((m) => m.status !== 'practice').map((map) => (
           <a
             key={map.id}
-            className="underline decoration-slate-600 underline-offset-2"
+            className="underline decoration-line underline-offset-2"
             href={href({ name: 'verify', mapId: map.id })}
           >
             {t.verify} {map.name}
           </a>
         ))}
         <a
-          className="underline decoration-slate-600 underline-offset-2"
+          className="underline decoration-line underline-offset-2"
           href={href({ name: 'settings' })}
         >
           {t.settings}
         </a>
-        <a
-          className="underline decoration-slate-600 underline-offset-2"
-          href={href({ name: 'perf' })}
-        >
+        <a className="underline decoration-line underline-offset-2" href={href({ name: 'perf' })}>
           {t.perf}
         </a>
       </nav>
 
-      <footer className="text-center text-xs text-slate-500">
-        solveur {SOLVER_VERSION} ·{' '}
+      <footer className="text-center text-xs text-muted">
+        v{__APP_VERSION__}, {t.solver} {SOLVER_VERSION},{' '}
         <a
-          className="underline decoration-slate-600 underline-offset-2"
+          className="underline decoration-line underline-offset-2"
           href="https://github.com/smetay/trek12-sherpa"
         >
-          code source
+          {t.sourceCode}
         </a>
       </footer>
     </main>
