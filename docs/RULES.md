@@ -4,9 +4,10 @@ This document is the source of truth for `packages/engine`: every rule the engin
 words, with the reading we chose wherever the rulebook leaves room. A rule change means changing this
 file, a test, and the code — in that order.
 
-Sources: the official French rulebook (*Manuel du Trekkeur*, Lumberjacks Studio, 2020) and the English
-edition (Pandasaurus, 2022), plus the designer's clarification of the rope-link rule on the Tric Trac
-forum (2020). No rulebook text is reproduced here; page references point to the French booklet.
+Sources: the official French rulebook (*Manuel du Trekkeur*, Lumberjacks Studio — both the 2020 first
+printing and the later printing whose cover lists three game modes), the English edition (Pandasaurus,
+2022), and the designer's clarification of the rope-link rule on the Tric Trac forum (2020). No
+rulebook text is reproduced here; page references point to the French booklet.
 
 ## Components (p. 2)
 
@@ -53,19 +54,22 @@ descending along the path).
 - **Score:** highest number of the path + 1 per other circle. With consecutive values this equals
   `2 · max − min`. A single unlinked number is not a path.
 
-### Interpretation: links are mandatory (`linkRule: 'mandatory'`, default)
+### Links are mandatory (`linkRule: 'mandatory'`, default)
 
-The English edition states that whenever a link can be drawn it must be; the French text is written in
-the imperative. We read this strictly: **every eligible link is drawn, including a merge**, the only
-freedom being the choice among same-valued neighbours. This matters strategically — merging [5-6] and
-[8-9] through a 7 scores 13 instead of 7 + 10 (before the length bonus), so a player who *could* avoid
-the merge would sometimes want to.
+The first printing of the French rulebook only implies it (imperative wording); the English edition
+and the **later French printing** (the one that lists three game modes on its cover) state it outright:
+when a link can be drawn it **must** be drawn; among several eligible neighbours holding the **same**
+number you must pick **exactly one**; when the eligible neighbours hold **two different numbers**
+(`v − 1` and `v + 1`) you must link **both**. The later printing's own example writes an 11 between a
+10 and a 12 with two links.
 
-`linkRule: 'optional'` is provided as a house variant (any eligible link may be skipped) so that both
-readings can be compared. Every game record stores its ruleset.
+So **every eligible link is drawn, including a merge**, the only freedom being the choice among
+same-valued neighbours. This matters strategically — merging [5-6] and [8-9] through a 7 scores 13
+instead of 7 + 10 (before the length bonus), so a player who *could* avoid the merge would sometimes
+want to; the rules do not allow it.
 
-> To confirm with experienced players: is a forced merge really mandatory? (Open question §8-b of the
-> project plan.)
+`linkRule: 'optional'` is kept as a house variant (any eligible link may be skipped) so that the two
+readings can be compared in the benchmarks. Every game record stores its ruleset.
 
 ## Zones (p. 6)
 
@@ -96,7 +100,7 @@ Worked examples reproduced by `packages/engine/test/golden.test.ts`: the French 
 |---|---|---|
 | Does a ☹ circle count as "filled" for the adjacency rule? | **Yes.** | Something was drawn in it; the rulebook only says "a circle you've already filled". The opposite reading makes the game unplayable when the first number written is a ☹ (nothing would be adjacent to a filled circle), so it cannot be intended. |
 | Can a ☹ link or form a zone? | **No.** | Explicit in both booklets: a ☹ is not a number. |
-| May a player decline an eligible link? | **No** (default); `optional` variant available. | See *Rope paths* above. |
+| May a player decline an eligible link, or skip one side of a merge? | **No**; `optional` variant available for comparison only. | Explicit in the later French printing and the English edition — see *Rope paths* above. |
 | Which of several same-valued eligible neighbours to link? | Player's choice. | Explicit in the French rulebook; each option is a distinct move. |
 | Can a path contain both a `v − 1` link and a `v + 1` link on the same circle? | Yes — that is the merge. | Designer's clarification. |
 | Is the bonus paid for each path/zone that ties for the longest/largest? | Once. | The rulebook speaks of *your longest path* and *your largest zone*, singular; the printed sheet has one box for each. |
