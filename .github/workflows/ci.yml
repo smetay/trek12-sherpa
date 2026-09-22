@@ -45,3 +45,9 @@ jobs:
 
       - name: Repository hygiene
         run: pnpm hygiene
+
+      - name: Install Playwright browser
+        run: pnpm --filter @trek12/web exec playwright install --with-deps chromium
+
+      - name: End-to-end smoke test
+        run: pnpm e2e

@@ -96,6 +96,7 @@ export function VerifyMapPage({ mapId }: { mapId: string }) {
 
       <MapSvg
         map={def}
+        showIds
         className="w-full rounded-2xl bg-slate-900"
         onCellClick={(id) => setSelected(id === selected ? null : id)}
         highlightEdges={selected === null ? [] : neighbours(selected).map((n) => [selected, n])}

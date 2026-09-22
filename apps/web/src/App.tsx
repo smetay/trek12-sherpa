@@ -1,20 +1,31 @@
 import { useRoute } from './lib/router.ts'
 import { HomePage } from './pages/HomePage.tsx'
 import { PerfPage } from './pages/PerfPage.tsx'
+import { PlayPage } from './pages/PlayPage.tsx'
+import { SettingsPage } from './pages/SettingsPage.tsx'
 import { VerifyMapPage } from './pages/VerifyMapPage.tsx'
 import { ReloadPrompt } from './ReloadPrompt.tsx'
 
-export function App() {
+function Page() {
   const route = useRoute()
+  switch (route.name) {
+    case 'verify':
+      return <VerifyMapPage mapId={route.mapId} />
+    case 'perf':
+      return <PerfPage />
+    case 'play':
+      return <PlayPage />
+    case 'settings':
+      return <SettingsPage />
+    default:
+      return <HomePage />
+  }
+}
+
+export function App() {
   return (
     <>
-      {route.name === 'verify' ? (
-        <VerifyMapPage mapId={route.mapId} />
-      ) : route.name === 'perf' ? (
-        <PerfPage />
-      ) : (
-        <HomePage />
-      )}
+      <Page />
       <ReloadPrompt />
     </>
   )

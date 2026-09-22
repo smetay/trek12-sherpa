@@ -2,32 +2,42 @@ import type { MapDef } from '@trek12/engine'
 import { useMemo } from 'react'
 
 const R = 0.5 // circle radius in map units (neighbouring centres are ~1 apart)
-const PAD = 0.75
+const PAD = 0.7
 
 export type CellVisual = {
   fill?: string
   stroke?: string
   label?: string
   dim?: boolean
+  dashed?: boolean
+  labelColor?: string
 }
 
 type Props = {
   map: MapDef
   cells?: (id: number) => CellVisual
+  /** Draw every adjacency (verification view). */
   edges?: boolean
+  /** Rope links drawn on the sheet. */
+  links?: [number, number][]
+  /** Highlighted edges (amber, dashed): neighbours of the selected cell, or a previewed link. */
   highlightEdges?: [number, number][]
   onCellClick?: (id: number) => void
   className?: string
+  /** Show the cell ids in empty circles (verification view). */
+  showIds?: boolean
 }
 
-/** Neutral rendering of a sheet: circles, thick double outline for dangerous ones, optional edges. */
+/** Neutral rendering of a sheet: circles, thick double outline for dangerous ones, links, previews. */
 export function MapSvg({
   map,
   cells,
   edges = false,
+  links = [],
   highlightEdges = [],
   onCellClick,
   className,
+  showIds = false,
 }: Props) {
   const box = useMemo(() => {
     const xs = map.cells.map((c) => c.x)
@@ -37,7 +47,19 @@ export function MapSvg({
     return { minX, minY, w: Math.max(...xs) + PAD - minX, h: Math.max(...ys) + PAD - minY }
   }, [map])
 
-  const highlighted = new Set(highlightEdges.map(([a, b]) => (a < b ? `${a}-${b}` : `${b}-${a}`)))
+  const line = (a: number, b: number, stroke: string, width: number, dashed = false) => (
+    <line
+      key={`${a}-${b}-${stroke}`}
+      x1={map.cells[a].x}
+      y1={map.cells[a].y}
+      x2={map.cells[b].x}
+      y2={map.cells[b].y}
+      stroke={stroke}
+      strokeWidth={width}
+      strokeLinecap="round"
+      strokeDasharray={dashed ? '0.08 0.08' : undefined}
+    />
+  )
 
   return (
     <svg
@@ -47,28 +69,14 @@ export function MapSvg({
       aria-label={map.name}
     >
       <title>{map.name}</title>
-      {(edges || highlightEdges.length > 0) &&
-        map.edges.map(([a, b]) => {
-          const key = a < b ? `${a}-${b}` : `${b}-${a}`
-          const on = highlighted.has(key)
-          if (!edges && !on) return null
-          return (
-            <line
-              key={key}
-              x1={map.cells[a].x}
-              y1={map.cells[a].y}
-              x2={map.cells[b].x}
-              y2={map.cells[b].y}
-              stroke={on ? '#f59e0b' : '#334155'}
-              strokeWidth={on ? 0.09 : 0.04}
-              strokeLinecap="round"
-            />
-          )
-        })}
+      {edges && map.edges.map(([a, b]) => line(a, b, '#334155', 0.04))}
+      {links.map(([a, b]) => line(a, b, '#f59e0b', 0.12))}
+      {highlightEdges.map(([a, b]) => line(a, b, '#fbbf24', 0.09, true))}
       {map.cells.map((cell) => {
         const v = cells?.(cell.id) ?? {}
         const dangerous = cell.max < 12
         const stroke = v.stroke ?? (dangerous ? '#f8fafc' : '#94a3b8')
+        const label = v.label ?? (showIds ? String(cell.id) : '')
         const shape = (
           <>
             <circle
@@ -78,6 +86,7 @@ export function MapSvg({
               fill={v.fill ?? '#1e293b'}
               stroke={stroke}
               strokeWidth={0.05}
+              strokeDasharray={v.dashed ? '0.1 0.06' : undefined}
             />
             {dangerous && (
               <circle
@@ -89,18 +98,20 @@ export function MapSvg({
                 strokeWidth={0.05}
               />
             )}
-            <text
-              x={cell.x}
-              y={cell.y}
-              textAnchor="middle"
-              dominantBaseline="central"
-              fontSize={v.label !== undefined ? 0.42 : 0.3}
-              fontWeight={600}
-              fill={v.label !== undefined ? '#f8fafc' : '#64748b'}
-              style={{ userSelect: 'none', pointerEvents: 'none' }}
-            >
-              {v.label ?? cell.id}
-            </text>
+            {label !== '' && (
+              <text
+                x={cell.x}
+                y={cell.y}
+                textAnchor="middle"
+                dominantBaseline="central"
+                fontSize={label.length > 1 ? 0.42 : 0.48}
+                fontWeight={700}
+                fill={v.labelColor ?? (v.label !== undefined ? '#f8fafc' : '#64748b')}
+                style={{ userSelect: 'none', pointerEvents: 'none' }}
+              >
+                {label}
+              </text>
+            )}
           </>
         )
         const opacity = v.dim ? 0.35 : 1

@@ -4,7 +4,7 @@
   "private": true,
   "description": "Unofficial best-move advisor for the roll-and-write game Trek 12 (offline PWA, Monte-Carlo solver)",
   "license": "MIT",
-  "author": "Sébastien Metay",
+  "author": "S\u00e9bastien Metay",
   "repository": "github:smetay/trek12-sherpa",
   "homepage": "https://smetay.github.io/trek12-sherpa/",
   "type": "module",
@@ -23,7 +23,8 @@
     "lint:fix": "biome check --write .",
     "hygiene": "bash scripts/check-hygiene.sh",
     "check": "biome ci . && pnpm typecheck && pnpm test && pnpm build && pnpm hygiene",
-    "bench": "node --env-file-if-exists=.env apps/bench/src/cli.ts"
+    "bench": "node --env-file-if-exists=.env apps/bench/src/cli.ts",
+    "e2e": "pnpm --filter @trek12/web e2e"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.14",
