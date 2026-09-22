@@ -1,0 +1,19 @@
+{
+  "name": "@trek12/bench",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Node CLI: simulate games, compare policies, measure throughput, tune weights.",
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@trek12/engine": "workspace:*",
+    "@trek12/solver": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

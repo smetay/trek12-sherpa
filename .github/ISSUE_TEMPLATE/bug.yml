@@ -1,0 +1,22 @@
+name: Bug report
+description: Something is broken (wrong score, crash, UI glitch, offline issue…)
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect, what happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: game
+    attributes:
+      label: Game export (optional)
+      description: In the app, Settings → Export game, then paste the JSON here. It lets us replay the exact position.
+      render: json
+  - type: input
+    id: device
+    attributes:
+      label: Device / browser
+      placeholder: iPhone 15, iOS 19.1, Safari (installed on home screen)

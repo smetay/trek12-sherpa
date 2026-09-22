@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Trek12 Sherpa">
+  <rect width="512" height="512" rx="112" fill="#0f172a"/>
+  <path d="M40 416 L200 160 L268 264 L336 192 L472 416 Z" fill="#cbd5e1"/>
+  <path d="M200 160 L172 206 L228 206 Z" fill="#f8fafc"/>
+  <path d="M336 192 L316 226 L356 226 Z" fill="#f8fafc"/>
+  <path d="M118 372 L166 300 L214 228" fill="none" stroke="#f59e0b" stroke-width="14" stroke-linecap="round"/>
+  <circle cx="118" cy="372" r="24" fill="#f59e0b"/>
+  <circle cx="166" cy="300" r="24" fill="#f59e0b"/>
+  <circle cx="214" cy="228" r="24" fill="#f59e0b"/>
+</svg>

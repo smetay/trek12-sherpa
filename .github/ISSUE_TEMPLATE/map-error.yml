@@ -1,0 +1,21 @@
+name: Map error
+description: Two circles that should (or should not) touch, a missing dangerous circle…
+labels: [map]
+body:
+  - type: dropdown
+    id: map
+    attributes:
+      label: Map
+      options: [Dunai, Kagkot, Dhaulagiri, Other (say which in the description)]
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: What is wrong?
+      description: |
+        Use the cell numbers shown in the app's map verification screen (Settings → Verify map).
+        Example: "cells 7 and 11 touch on the sheet but are not neighbours in the app".
+        Please do NOT attach photos or scans of the sheet (copyrighted artwork) — describe the cells instead.
+    validations:
+      required: true
