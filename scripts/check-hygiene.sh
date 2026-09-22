@@ -12,6 +12,7 @@ limit=$((300 * 1024))
 
 while IFS= read -r -d '' file; do
   [ "$file" = "pnpm-lock.yaml" ] && continue
+  [ -f "$file" ] || continue # deleted in the working tree but still in the index
   size=$(wc -c <"$file")
   if [ "$size" -gt "$limit" ]; then
     echo "::error file=$file::tracked file is $size bytes (> $limit)"

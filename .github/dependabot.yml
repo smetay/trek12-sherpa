@@ -6,6 +6,10 @@ updates:
       interval: weekly
       day: monday
     open-pull-requests-limit: 5
+    ignore:
+      # Types follow the runtime major (Node 24, see .nvmrc), not the latest Node release.
+      - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']
     groups:
       dev-dependencies:
         dependency-type: development
