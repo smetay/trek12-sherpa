@@ -2,21 +2,24 @@
   "name": "@trek12/web",
   "version": "0.0.0",
   "private": true,
-  "description": "Trek12 Sherpa — offline-first PWA (Vite + React + Tailwind).",
+  "description": "Trek12 Sherpa \u2014 offline-first PWA (Vite + React + Tailwind).",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.worker.json && tsc -p tsconfig.node.json"
+    "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.worker.json && tsc -p tsconfig.node.json",
+    "e2e": "playwright test"
   },
   "dependencies": {
     "@trek12/engine": "workspace:*",
     "@trek12/solver": "workspace:*",
     "react": "19.3.0",
-    "react-dom": "19.3.0"
+    "react-dom": "19.3.0",
+    "zustand": "5.0.15"
   },
   "devDependencies": {
+    "@playwright/test": "1.63.0",
     "@tailwindcss/vite": "4.3.3",
     "@types/node": "catalog:",
     "@types/react": "19.3.0",

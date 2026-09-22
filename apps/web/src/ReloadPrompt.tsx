@@ -1,4 +1,5 @@
 import { useRegisterSW } from 'virtual:pwa-register/react'
+import { useEffect } from 'react'
 
 /** Update toast for the `registerType: 'prompt'` service worker — the user decides when to reload. */
 export function ReloadPrompt() {
@@ -7,6 +8,13 @@ export function ReloadPrompt() {
     needRefresh: [needRefresh, setNeedRefresh],
     updateServiceWorker,
   } = useRegisterSW()
+
+  // The "ready offline" notice is informational: dismiss it by itself. The update prompt stays.
+  useEffect(() => {
+    if (!offlineReady) return
+    const id = setTimeout(() => setOfflineReady(false), 4000)
+    return () => clearTimeout(id)
+  }, [offlineReady, setOfflineReady])
 
   if (!offlineReady && !needRefresh) return null
 
@@ -18,7 +26,7 @@ export function ReloadPrompt() {
   return (
     <div
       role="status"
-      className="fixed inset-x-4 bottom-4 flex items-center gap-3 rounded-2xl border border-slate-600 bg-slate-900 p-4 shadow-xl"
+      className="fixed inset-x-4 top-[max(env(safe-area-inset-top),1rem)] z-20 flex items-center gap-3 rounded-2xl border border-slate-600 bg-slate-900 p-4 shadow-xl"
     >
       <p className="flex-1 text-sm">
         {needRefresh

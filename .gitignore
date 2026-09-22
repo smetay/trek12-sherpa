@@ -23,6 +23,7 @@ reference/
 # test artefacts
 playwright-report/
 test-results/
+playwright/.cache/
 
 # OS / editors / local tooling
 .DS_Store
