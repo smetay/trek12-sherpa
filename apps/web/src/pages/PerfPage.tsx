@@ -47,7 +47,7 @@ export function PerfPage() {
           Accueil
         </a>
       </header>
-      <p className="text-sm text-slate-300">
+      <p className="text-sm text-muted">
         Mesure la vitesse de simulation de cet appareil (parties jouées jusqu'au bout depuis une
         position de milieu de partie sur Kagkot, ~2 s par politique, dans un worker).
         {cores > 0 && ` Cœurs annoncés : ${cores}.`}
@@ -63,7 +63,7 @@ export function PerfPage() {
       {rows.length > 0 && (
         <table className="w-full text-sm">
           <thead>
-            <tr className="text-left text-slate-400">
+            <tr className="text-left text-muted">
               <th className="py-1">Politique</th>
               <th className="py-1 text-right">Rollouts/s</th>
               <th className="py-1 text-right">Score moyen</th>
@@ -71,7 +71,7 @@ export function PerfPage() {
           </thead>
           <tbody>
             {rows.map((r) => (
-              <tr key={r.policy} className="border-t border-slate-700">
+              <tr key={r.policy} className="border-t border-line">
                 <td className="py-1">{r.policy}</td>
                 <td className="py-1 text-right tabular-nums">
                   {Math.round(r.perSecond).toLocaleString('fr-FR')}
@@ -90,9 +90,7 @@ export function PerfPage() {
         </p>
       )}
       {rows.length > 0 && !running && (
-        <pre className="whitespace-pre-wrap rounded-lg bg-slate-950 p-2 text-xs text-slate-300">
-          {report}
-        </pre>
+        <pre className="whitespace-pre-wrap rounded-lg bg-bg p-2 text-xs text-muted">{report}</pre>
       )}
     </main>
   )

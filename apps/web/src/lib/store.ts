@@ -9,12 +9,16 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { Lang } from './i18n.ts'
 
+/** What the circles show during a decision: points lost vs the best move, or P(score ≥ summit). */
+export type CellMetric = 'points' | 'summit'
+
 type Store = {
   record: GameRecord | null
   redo: HistoryEntry[]
   lang: Lang
   thinkMs: number
   workers: number
+  cellMetric: CellMetric
   startGame(mapId: string): void
   playEntry(entry: HistoryEntry): void
   undo(): void
@@ -24,6 +28,7 @@ type Store = {
   setLang(lang: Lang): void
   setThinkMs(ms: number): void
   setWorkers(n: number): void
+  setCellMetric(m: CellMetric): void
 }
 
 const browserLang = (): Lang =>
@@ -39,6 +44,7 @@ export const useStore = create<Store>()(
       lang: browserLang(),
       thinkMs: 1500,
       workers: 0, // 0 = automatic
+      cellMetric: 'points',
       startGame(mapId) {
         const def = getMapDef(mapId)
         if (!def) return
@@ -86,6 +92,7 @@ export const useStore = create<Store>()(
       setLang: (lang) => set({ lang }),
       setThinkMs: (thinkMs) => set({ thinkMs }),
       setWorkers: (workers) => set({ workers }),
+      setCellMetric: (cellMetric) => set({ cellMetric }),
     }),
     {
       name: 'sherpa.v1',
@@ -96,6 +103,7 @@ export const useStore = create<Store>()(
         lang: s.lang,
         thinkMs: s.thinkMs,
         workers: s.workers,
+        cellMetric: s.cellMetric,
       }),
       merge: (persisted, current) => {
         const p = (persisted ?? {}) as Partial<Store>

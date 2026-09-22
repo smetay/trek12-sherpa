@@ -1,6 +1,6 @@
 {
   "name": "@trek12/web",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "private": true,
   "description": "Trek12 Sherpa \u2014 offline-first PWA (Vite + React + Tailwind).",
   "type": "module",
@@ -12,6 +12,7 @@
     "e2e": "playwright test"
   },
   "dependencies": {
+    "@fontsource-variable/atkinson-hyperlegible-next": "5.3.0",
     "@trek12/engine": "workspace:*",
     "@trek12/solver": "workspace:*",
     "react": "19.3.0",

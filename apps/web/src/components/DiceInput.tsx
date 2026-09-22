@@ -8,6 +8,13 @@ type Props = {
 const YELLOW = [0, 1, 2, 3, 4, 5]
 const RED = [1, 2, 3, 4, 5, 6]
 
+type Tone = 'yellow' | 'red'
+
+const FACE_ON: Record<Tone, string> = {
+  yellow: 'bg-accent text-accent-ink border-accent',
+  red: 'bg-die-red text-white border-die-red',
+}
+
 function Row({
   label,
   values,
@@ -19,14 +26,11 @@ function Row({
   values: number[]
   selected: number | null
   onPick: (v: number) => void
-  tone: 'yellow' | 'red'
+  tone: Tone
 }) {
-  const on = tone === 'yellow' ? 'bg-yellow-400 text-slate-950' : 'bg-rose-600 text-white'
-  const off =
-    tone === 'yellow' ? 'bg-yellow-400/15 text-yellow-200' : 'bg-rose-600/15 text-rose-200'
   return (
     <fieldset className="m-0 border-0 p-0">
-      <legend className="mb-1 text-xs text-slate-400">{label}</legend>
+      <legend className="mb-1 text-sm text-muted">{label}</legend>
       <div className="grid grid-cols-6 gap-1.5">
         {values.map((v) => (
           <button
@@ -34,7 +38,9 @@ function Row({
             type="button"
             aria-pressed={selected === v}
             onClick={() => onPick(v)}
-            className={`h-11 rounded-lg text-lg font-bold tabular-nums transition ${selected === v ? on : off}`}
+            className={`h-12 rounded-lg border-2 text-xl font-bold ${
+              selected === v ? FACE_ON[tone] : 'border-line bg-surface text-ink'
+            }`}
           >
             {v}
           </button>
@@ -55,6 +61,40 @@ export function DiceInput({ y, r, onChange, labels }: Props) {
         tone="yellow"
       />
       <Row label={labels.red} values={RED} selected={r} onPick={(v) => onChange(y, v)} tone="red" />
+    </div>
+  )
+}
+
+/** Collapsed dice once both are entered: two die faces and a button to enter new ones. */
+export function DiceChip({
+  y,
+  r,
+  label,
+  change,
+  onChange,
+}: {
+  y: number
+  r: number
+  label: string
+  change: string
+  onChange: () => void
+}) {
+  return (
+    <div className="flex items-center gap-2">
+      <span className="text-sm text-muted">{label}</span>
+      <span className="grid size-10 place-items-center rounded-lg bg-accent text-xl font-bold text-accent-ink">
+        {y}
+      </span>
+      <span className="grid size-10 place-items-center rounded-lg bg-die-red text-xl font-bold text-white">
+        {r}
+      </span>
+      <button
+        type="button"
+        onClick={onChange}
+        className="ml-1 h-10 rounded-lg border border-line px-3 text-sm font-medium"
+      >
+        {change}
+      </button>
     </div>
   )
 }

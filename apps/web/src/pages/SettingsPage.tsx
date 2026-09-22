@@ -3,13 +3,24 @@ import { useState } from 'react'
 import { DICT, type Lang } from '../lib/i18n.ts'
 import { href } from '../lib/router.ts'
 import { defaultPoolSize } from '../lib/solverPool.ts'
-import { useStore } from '../lib/store.ts'
+import { type CellMetric, useStore } from '../lib/store.ts'
 
 const THINK = [500, 1000, 1500, 2500, 4000]
 
 export function SettingsPage() {
-  const { lang, thinkMs, workers, record, setLang, setThinkMs, setWorkers, importRecord, abandon } =
-    useStore()
+  const {
+    lang,
+    thinkMs,
+    workers,
+    cellMetric,
+    record,
+    setLang,
+    setThinkMs,
+    setWorkers,
+    setCellMetric,
+    importRecord,
+    abandon,
+  } = useStore()
   const t = DICT[lang]
   const [copied, setCopied] = useState(false)
   const [importText, setImportText] = useState('')
@@ -42,7 +53,7 @@ export function SettingsPage() {
   }
 
   const seg = (active: boolean) =>
-    `flex-1 rounded-lg px-2 py-2 text-sm font-medium ${active ? 'bg-amber-500 text-slate-950' : 'bg-slate-800 text-slate-200'}`
+    `flex-1 rounded-lg border px-2 py-2.5 text-sm font-semibold ${active ? 'border-accent bg-accent text-accent-ink' : 'border-line bg-surface text-ink'}`
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col gap-5 px-4 py-6">
@@ -54,7 +65,7 @@ export function SettingsPage() {
       </header>
 
       <section>
-        <h2 className="mb-2 text-sm text-slate-400">{t.language}</h2>
+        <h2 className="mb-2 text-sm text-muted">{t.language}</h2>
         <div className="flex gap-2">
           {(['fr', 'en'] as Lang[]).map((l) => (
             <button
@@ -71,7 +82,24 @@ export function SettingsPage() {
       </section>
 
       <section>
-        <h2 className="mb-2 text-sm text-slate-400">{t.thinkTime}</h2>
+        <h2 className="mb-2 text-sm text-muted">{t.cellMetric}</h2>
+        <div className="flex gap-2">
+          {(['points', 'summit'] as CellMetric[]).map((m) => (
+            <button
+              key={m}
+              type="button"
+              onClick={() => setCellMetric(m)}
+              className={seg(cellMetric === m)}
+              aria-pressed={cellMetric === m}
+            >
+              {m === 'points' ? t.metricPoints : t.metricSummit}
+            </button>
+          ))}
+        </div>
+      </section>
+
+      <section>
+        <h2 className="mb-2 text-sm text-muted">{t.thinkTime}</h2>
         <div className="flex gap-2">
           {THINK.map((ms) => (
             <button
@@ -88,7 +116,7 @@ export function SettingsPage() {
       </section>
 
       <section>
-        <h2 className="mb-2 text-sm text-slate-400">
+        <h2 className="mb-2 text-sm text-muted">
           {t.workers} (auto = {defaultPoolSize()})
         </h2>
         <div className="flex gap-2">
@@ -111,12 +139,12 @@ export function SettingsPage() {
           type="button"
           onClick={exportGame}
           disabled={!record}
-          className="rounded-xl border border-slate-600 px-3 py-3 font-medium disabled:opacity-40"
+          className="rounded-xl border border-line px-3 py-3 font-medium disabled:opacity-40"
         >
           {copied ? t.copied : t.exportGame}
         </button>
         {record && (
-          <pre className="max-h-24 overflow-auto rounded-lg bg-slate-950 p-2 text-[10px] text-slate-400">
+          <pre className="max-h-24 overflow-auto rounded-lg bg-bg p-2 text-[10px] text-muted">
             {JSON.stringify(record)}
           </pre>
         )}
@@ -124,25 +152,25 @@ export function SettingsPage() {
           value={importText}
           onChange={(e) => setImportText(e.target.value)}
           placeholder='{"version":1,"mapId":"kagkot",…}'
-          className="h-20 rounded-lg border border-slate-700 bg-slate-950 p-2 text-xs"
+          className="h-20 rounded-lg border border-line bg-bg p-2 text-xs"
           aria-label={t.importGame}
         />
         <button
           type="button"
           onClick={doImport}
           disabled={importText.trim() === ''}
-          className="rounded-xl border border-slate-600 px-3 py-3 font-medium disabled:opacity-40"
+          className="rounded-xl border border-line px-3 py-3 font-medium disabled:opacity-40"
         >
           {t.importGame}
         </button>
-        {importError && <p className="text-sm text-rose-300">✗</p>}
+        {importError && <p className="text-sm text-far">✗</p>}
         <button
           type="button"
           onClick={() => {
             if (record && window.confirm(t.confirmAbandon)) abandon()
           }}
           disabled={!record}
-          className="rounded-xl border border-rose-800 px-3 py-3 font-medium text-rose-200 disabled:opacity-40"
+          className="rounded-xl border border-far px-3 py-3 font-medium text-far disabled:opacity-40"
         >
           {t.abandon}
         </button>

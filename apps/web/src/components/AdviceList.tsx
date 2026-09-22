@@ -1,81 +1,103 @@
 import type { CompiledMap, State } from '@trek12/engine'
 import type { RankedMove } from '@trek12/solver'
+import { lossText, num } from '../lib/format.ts'
 import { describeLinks, type MoveView, viewMove } from '../lib/game.ts'
-import type { Dict } from '../lib/i18n.ts'
+import { HEAT_COLOR, type HeatLevel, levelFor } from '../lib/heat.ts'
+import type { Dict, Lang } from '../lib/i18n.ts'
+
+export function moveTitle(v: MoveView, t: Dict): string {
+  // Non-breaking spaces keep "→ case 8" and "dé 5" together when the line wraps.
+  return `${t.options[v.op]}\u00a0${v.sad ? '☹' : v.result} →\u00a0${t.cell.toLowerCase()}\u00a0${v.cell}`
+}
+
+function Swatch({ level }: { level: HeatLevel }) {
+  return (
+    <span
+      aria-hidden="true"
+      className="inline-block size-3 shrink-0 rounded-full"
+      style={{ background: HEAT_COLOR[level] }}
+    />
+  )
+}
 
 type Props = {
   map: CompiledMap
   state: State
-  ranking: RankedMove[]
-  running: boolean
+  /** Rows to show, best first; `top` is the best move overall (reference for losses). */
+  rows: RankedMove[]
+  top: RankedMove | undefined
   selected: number | null
   onSelect: (move: number) => void
   t: Dict
-  limit?: number
+  lang: Lang
 }
 
-export function moveTitle(v: MoveView, t: Dict): string {
-  return `${t.opShort[v.op]} ${v.sad ? '☹' : v.result} → ${t.cell.toLowerCase()} ${v.cell}`
-}
-
-export function AdviceList({
-  map,
-  state,
-  ranking,
-  running,
-  selected,
-  onSelect,
-  t,
-  limit = 6,
-}: Props) {
-  const shown = ranking.filter((m) => m.exact || m.n > 0).slice(0, limit)
-  if (shown.length === 0) {
-    return <p className="text-sm text-slate-400">{running ? t.thinking : ''}</p>
-  }
+/** Ranked moves as rows: what to write where, how much it costs vs the best, links it draws. */
+export function AdviceList({ map, state, rows, top, selected, onSelect, t, lang }: Props) {
   return (
-    <ol className="flex flex-col gap-1.5">
-      {shown.map((m, i) => {
+    <ol className="flex flex-col">
+      {rows.map((m) => {
         const v = viewMove(map, m.move)
-        const isSel = selected === m.move
+        const isTop = top !== undefined && m.move === top.move
+        const loss = top ? Math.max(0, top.mean - m.mean) : 0
+        const level: HeatLevel = isTop ? 'best' : levelFor(loss, m.tied)
+        const verdict = isTop ? t.legendBest : m.tied ? t.tied : `${lossText(loss, lang)} ${t.pts}`
         const links = describeLinks(v, state, map, t)
+        const isSel = selected === m.move
         return (
-          <li key={m.move}>
+          <li key={m.move} className="border-b border-line last:border-b-0">
             <button
               type="button"
               onClick={() => onSelect(m.move)}
               aria-pressed={isSel}
-              className={`w-full rounded-xl border px-3 py-2 text-left ${isSel ? 'border-amber-400 bg-amber-400/10' : 'border-slate-700 bg-slate-800/60'}`}
+              className={`flex w-full items-start gap-3 py-2.5 pr-1 text-left ${
+                isSel ? 'border-l-4 border-ink pl-2' : 'border-l-4 border-transparent pl-2'
+              }`}
             >
-              <div className="flex items-baseline justify-between gap-2">
-                <span className="font-semibold">
-                  {i === 0 ? '★ ' : ''}
+              <span className="mt-1">
+                <Swatch level={level} />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block font-semibold">
+                  {isTop ? '★ ' : ''}
                   {moveTitle(v, t)}
                 </span>
-                <span className="text-sm tabular-nums text-slate-300">
-                  {m.exact
-                    ? `${m.mean.toFixed(1)} (${t.exact})`
-                    : `${m.mean.toFixed(1)} ± ${(1.96 * m.se).toFixed(1)}`}
+                {(links || v.sad) && (
+                  <span className="block text-sm text-muted">{v.sad ? t.sad : links}</span>
+                )}
+              </span>
+              <span className="shrink-0 text-right">
+                <span className="block font-semibold">{verdict}</span>
+                <span className="block text-sm text-muted">
+                  {t.expected} {num(m.mean, lang)}
+                  {m.exact ? ` (${t.exact})` : ''}
                 </span>
-              </div>
-              <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-slate-400">
-                {i > 0 && (
-                  <span className={m.tied ? 'text-emerald-300' : ''}>
-                    {m.tied ? t.tied : `${m.diff.toFixed(1)} ${t.vsBest}`}
-                    {!m.exact && ` (±${m.ci.toFixed(1)})`}
-                  </span>
-                )}
-                {!m.exact && m.n > 0 && (
-                  <span>
-                    {t.pSummit} {(100 * m.pSummit).toFixed(0)} % · {m.n} {t.rollouts}
-                  </span>
-                )}
-                {links && <span>{links}</span>}
-                {v.sad && <span className="text-rose-300">{t.sad}</span>}
-              </div>
+              </span>
             </button>
           </li>
         )
       })}
     </ol>
+  )
+}
+
+/** Colour key for the circles, in the order of the heat scale. */
+export function HeatLegend({ t }: { t: Dict }) {
+  const items: [HeatLevel, string][] = [
+    ['best', `★ ${t.legendBest}`],
+    ['tied', t.legendTied],
+    ['near', t.legendNear],
+    ['mid', t.legendMid],
+    ['far', t.legendFar],
+  ]
+  return (
+    <ul className="flex flex-wrap gap-x-3 gap-y-1 text-sm text-muted">
+      {items.map(([level, label]) => (
+        <li key={level} className="flex items-center gap-1.5">
+          <Swatch level={level} />
+          {label}
+        </li>
+      ))}
+    </ul>
   )
 }
