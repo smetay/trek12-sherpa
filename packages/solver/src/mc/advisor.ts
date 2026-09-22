@@ -38,10 +38,31 @@ export async function advise(
 ): Promise<Advice> {
   const now = options.now ?? (() => Date.now())
   const start = now()
-  const race = new Race(map, state, y, r, policy, options)
+  const race = new Race(map, state, y, r, policy, { ...options, deferExact: true })
   const chunkSize = options.chunkSize ?? 36
-  const cores = race.candidates.map((c) => coreOf(map, c.child))
 
+  if (race.exactPending) {
+    // Exact endgame: split the candidates evenly across the workers (each shares a memo).
+    const count = race.moves.length
+    const parts = Math.max(1, Math.min(pool.size, count))
+    const per = Math.ceil(count / parts)
+    const rootCore = coreOf(map, state)
+    const slices: Int32Array[] = []
+    for (let from = 0; from < count; from += per) slices.push(race.moves.slice(from, from + per))
+    const results = await Promise.all(slices.map((moves) => pool.exact(rootCore, moves)))
+    if (!options.shouldStop?.()) {
+      const values = new Float64Array(count)
+      let at = 0
+      for (const part of results) {
+        values.set(part, at)
+        at += part.length
+      }
+      race.setExact(values)
+      options.onProgress?.(race.ranking(), 0)
+    }
+  }
+
+  const cores = race.candidates.map((c) => coreOf(map, c.child))
   while (!race.done) {
     if (options.shouldStop?.()) break
     const chunks = race.plan(chunkSize)

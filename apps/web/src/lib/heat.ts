@@ -39,12 +39,15 @@ export function levelFor(loss: number, tied: boolean): HeatLevel {
 export function cellHeats(
   ranking: RankedMove[],
   cellOf: (move: number) => number,
+  /** Restrict to some moves (e.g. one operation); losses stay relative to the best move overall. */
+  keep: (move: number) => boolean = () => true,
 ): Map<number, CellHeat> {
   const measured = ranking.filter((m) => m.exact || m.n > 0)
   const heats = new Map<number, CellHeat>()
   if (measured.length === 0) return heats
   const top = measured.reduce((b, m) => (m.mean > b.mean ? m : b), measured[0])
   for (const m of measured) {
+    if (!keep(m.move)) continue
     const cell = cellOf(m.move)
     const known = heats.get(cell)
     if (known && known.mean >= m.mean) continue
@@ -59,4 +62,30 @@ export function cellHeats(
     })
   }
   return heats
+}
+
+/** Best outcome per operation index (0..4): loss vs the best move overall and its heat level. */
+export function opHeats(
+  ranking: RankedMove[],
+  opOf: (move: number) => number,
+): (CellHeat | undefined)[] {
+  const measured = ranking.filter((m) => m.exact || m.n > 0)
+  const out: (CellHeat | undefined)[] = [undefined, undefined, undefined, undefined, undefined]
+  if (measured.length === 0) return out
+  const top = measured.reduce((b, m) => (m.mean > b.mean ? m : b), measured[0])
+  for (const m of measured) {
+    const op = opOf(m.move)
+    const known = out[op]
+    if (known && known.mean >= m.mean) continue
+    const loss = Math.max(0, top.mean - m.mean)
+    out[op] = {
+      move: m.move,
+      level: m.move === top.move ? 'best' : levelFor(loss, m.tied),
+      loss,
+      mean: m.mean,
+      pSummit: m.pSummit,
+      exact: m.exact,
+    }
+  }
+  return out
 }

@@ -1,4 +1,5 @@
 import { type CompiledMap, compileMap, getMapDef, stateFromCore } from '@trek12/engine'
+import { exactRootValues } from '../exact/endgame.ts'
 import { crnRolloutScores } from '../mc/crn.ts'
 import { getPolicy } from '../policy/registry.ts'
 import type { SolverRequest, SolverResponse } from './protocol.ts'
@@ -15,6 +16,14 @@ export function createHandler(): (req: SolverRequest) => SolverResponse {
         return { t: 'ready' }
       }
       if (!map) return { t: 'error', job: req.job, message: 'worker not initialised' }
+      if (req.t === 'exact') {
+        const root = stateFromCore(map, req.core)
+        return {
+          t: 'exact',
+          job: req.job,
+          values: exactRootValues(map, root, req.moves, req.moves.length),
+        }
+      }
       const policy = getPolicy(req.policy)
       if (!policy) return { t: 'error', job: req.job, message: `unknown policy ${req.policy}` }
       const child = stateFromCore(map, req.core)

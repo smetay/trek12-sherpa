@@ -3,16 +3,21 @@
 import { parseArgs } from 'node:util'
 import { compileMap, ENGINE_VERSION, getMapDef, MAPS } from '@trek12/engine'
 import {
+  DEFAULT_WEIGHTS,
   getPolicy,
+  type HeuristicWeights,
   heuristicPolicy,
+  makeHeuristicPolicy,
   measureRollouts,
   POLICIES,
   parseMcPolicy,
   positionAfter,
+  registerPolicy,
   SOLVER_VERSION,
   simulateGame,
   stats,
 } from '@trek12/solver'
+import { evaluateWeights, tune } from './tune.ts'
 
 const USAGE = `Usage: pnpm bench <command> [options]
 
@@ -20,11 +25,13 @@ Commands:
   sim       Simulate games            --map <id> --policy <name> --games <n> --seed <n>
   compare   Paired comparison         --map <id> --policy a,b,c  --games <n> --seed <n>
   perf      Rollouts per second       --map <id> --policy <name> --turns <n> --ms <n>
+  tune      Cross-entropy weight search --games <n> --pop <n> --elite <n> --gens <n> --seed <n>
   version   Print versions
   help      Show this help
 
 Maps: ${MAPS.map((m) => m.id).join(', ')} (default: all real sheets)
-Policies: ${POLICIES.map((p) => p.name).join(', ')}, mc<N> (Monte-Carlo advisor, N rollouts per candidate)
+Policies: ${POLICIES.map((p) => p.name).join(', ')}, mc<N> or mc<N>@<rollout> (Monte-Carlo advisor)
+Options:  --weights '{"rescue":..}' replaces the "heuristic" weights for this run
 `
 
 const { values, positionals } = parseArgs({
@@ -37,8 +44,16 @@ const { values, positionals } = parseArgs({
     turns: { type: 'string', default: '9' },
     ms: { type: 'string', default: '3000' },
     json: { type: 'boolean', default: false },
+    weights: { type: 'string' },
+    pop: { type: 'string', default: '24' },
+    elite: { type: 'string', default: '6' },
+    gens: { type: 'string', default: '25' },
   },
 })
+if (values.weights) {
+  const w = { ...DEFAULT_WEIGHTS, ...(JSON.parse(values.weights) as Partial<HeuristicWeights>) }
+  registerPolicy(makeHeuristicPolicy(w, 'heuristic'))
+}
 const command = positionals[0] ?? 'help'
 const games = Number(values.games)
 const seed = Number(values.seed)
@@ -145,6 +160,31 @@ switch (command) {
         )
       }
     }
+    break
+  }
+
+  case 'tune': {
+    const opts = {
+      maps,
+      games: Number.isFinite(games) && values.games !== '1000' ? games : 600,
+      population: Number(values.pop),
+      elite: Number(values.elite),
+      generations: Number(values.gens),
+      seed,
+      log: (line: string) => console.log(line),
+    }
+    console.log(
+      `tuning on ${maps.map((m) => m.def.id).join(', ')}: ${opts.games} games/map, pop ${opts.population}, elite ${opts.elite}, ${opts.generations} generations`,
+    )
+    const t0 = performance.now()
+    const result = tune(opts)
+    const holdout = 3_000
+    const base = evaluateWeights(maps, DEFAULT_WEIGHTS, holdout, 424_242)
+    const tuned = evaluateWeights(maps, result.weights, holdout, 424_242)
+    console.log(`\ntuned weights: ${JSON.stringify(result.weights)}`)
+    console.log(
+      `held-out (${holdout} games/map, paired seeds): default ${base.toFixed(2)} → tuned ${tuned.toFixed(2)} (Δ ${(tuned - base).toFixed(2)}) in ${((performance.now() - t0) / 1000).toFixed(0)} s`,
+    )
     break
   }
 

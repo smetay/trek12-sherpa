@@ -1,6 +1,6 @@
 {
   "name": "trek12-sherpa",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "description": "Unofficial best-move advisor for the roll-and-write game Trek 12 (offline PWA, Monte-Carlo solver)",
   "license": "MIT",

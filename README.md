@@ -25,14 +25,15 @@ where to write the result and which rope links to draw.
 ## How strong is it?
 
 For every legal move, the advisor plays thousands of complete games to the end, with every candidate
-facing the same future dice. It solves the last turns exactly. Measured over 40 paired games per
-sheet, compared with a hand-tuned heuristic player:
+facing the same future dice; each playout ends with the exact expectation of the last turn, and the
+last three turns of the game are solved exactly. Measured over 80 paired games per sheet against a
+tuned heuristic player:
 
 | Sheet | Heuristic | Advisor | Gain |
 |---|---:|---:|---:|
-| Dunai (65+) | 64.3 | **89.0** | +24.7 ± 2.5 |
-| Kagkot (70+) | 61.4 | **83.2** | +21.8 ± 2.2 |
-| Dhaulagiri (75+) | 58.5 | **83.8** | +25.3 ± 2.7 |
+| Dunai (65+) | 66.5 | **89.7** | +23.2 |
+| Kagkot (70+) | 62.0 | **82.5** | +20.5 |
+| Dhaulagiri (75+) | 63.6 | **83.7** | +20.1 |
 
 How the solver works: [docs/SOLVER.md](docs/SOLVER.md). All benchmarks: [docs/BENCHMARKS.md](docs/BENCHMARKS.md).
 The rules as implemented, with every interpretation: [docs/RULES.md](docs/RULES.md).

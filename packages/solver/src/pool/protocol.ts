@@ -13,10 +13,19 @@ export type SolverRequest =
       count: number
       policy: string
     }
+  | {
+      t: 'exact'
+      job: number
+      /** Serialised core of the state *before* the root moves. */
+      core: Int32Array
+      /** Root moves to solve exactly. */
+      moves: Int32Array
+    }
 
 export type SolverResponse =
   | { t: 'ready'; job?: undefined }
   | { t: 'rollouts'; job: number; scores: Int32Array }
+  | { t: 'exact'; job: number; values: Float64Array }
   | { t: 'error'; job?: number; message: string }
 
 export type WorkerLike = {

@@ -46,6 +46,45 @@ const downCands = new Int32Array(8)
 const upCands = new Int32Array(8)
 
 /**
+ * Appends every legal way of writing `result` with `op` in `cell` (one move per rope-link choice,
+ * a single ☹ move when the result exceeds the cell's limit) to `out` at `count`; returns the new count.
+ * The caller guarantees that the cell and the operation are available.
+ */
+export function placementMoves(
+  map: CompiledMap,
+  s: State,
+  cell: number,
+  op: number,
+  result: number,
+  out: Int32Array,
+  count: number,
+): number {
+  const { oVal, oUp, oDown, nbrStart, nbrList } = map
+  if (result > map.cellMax[cell]) {
+    out[count++] = encodeMove(cell, op, result, EMPTY, EMPTY)
+    return count
+  }
+  const optional = map.rules.linkRule === 'optional'
+  let nd = 0
+  let nu = 0
+  for (let i = nbrStart[cell]; i < nbrStart[cell + 1]; i++) {
+    const nb = nbrList[i]
+    const nv = s[oVal + nb]
+    if (!isNumber(nv)) continue
+    if (nv === result - 1 && s[oUp + nb] === EMPTY) downCands[nd++] = nb
+    else if (nv === result + 1 && s[oDown + nb] === EMPTY) upCands[nu++] = nb
+  }
+  if (optional || nd === 0) downCands[nd++] = EMPTY
+  if (optional || nu === 0) upCands[nu++] = EMPTY
+  for (let i = 0; i < nd; i++) {
+    for (let j = 0; j < nu; j++) {
+      out[count++] = encodeMove(cell, op, result, downCands[i], upCands[j])
+    }
+  }
+  return count
+}
+
+/**
  * Writes every legal move for roll (y, r) into `out` and returns how many there are.
  * Link variants are distinct moves: writing a 5 next to two eligible 6s yields two moves.
  */
@@ -57,38 +96,15 @@ export function generateMoves(
   out: Int32Array,
 ): number {
   const n = map.n
-  const { oVal, oUp, oDown, nbrStart, nbrList, cellMax } = map
   const cellMask = legalCellMask(map, s)
-  const optional = map.rules.linkRule === 'optional'
   const roll = rollIndex(y, r)
   let count = 0
-
   for (let op = 0; op < OP_COUNT; op++) {
     if (!opAvailable(map, s, op)) continue
     const result = RESULTS[op * ROLL_COUNT + roll]
-
     for (let cell = 0; cell < n; cell++) {
       if ((cellMask & (1 << cell)) === 0) continue
-      if (result > cellMax[cell]) {
-        out[count++] = encodeMove(cell, op, result, EMPTY, EMPTY)
-        continue
-      }
-      let nd = 0
-      let nu = 0
-      for (let i = nbrStart[cell]; i < nbrStart[cell + 1]; i++) {
-        const nb = nbrList[i]
-        const nv = s[oVal + nb]
-        if (!isNumber(nv)) continue
-        if (nv === result - 1 && s[oUp + nb] === EMPTY) downCands[nd++] = nb
-        else if (nv === result + 1 && s[oDown + nb] === EMPTY) upCands[nu++] = nb
-      }
-      if (optional || nd === 0) downCands[nd++] = EMPTY
-      if (optional || nu === 0) upCands[nu++] = EMPTY
-      for (let i = 0; i < nd; i++) {
-        for (let j = 0; j < nu; j++) {
-          out[count++] = encodeMove(cell, op, result, downCands[i], upCands[j])
-        }
-      }
+      count = placementMoves(map, s, cell, op, result, out, count)
     }
   }
   return count
