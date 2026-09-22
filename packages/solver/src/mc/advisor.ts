@@ -51,7 +51,7 @@ export async function advise(
       ),
     )
     if (options.shouldStop?.()) break
-    chunks.forEach((chunk, i) => race.ingest(chunk, results[i]))
+    for (let i = 0; i < chunks.length; i++) race.ingest(chunks[i], results[i])
     race.finishRound()
     options.onProgress?.(race.ranking(), race.round)
     if (options.timeBudgetMs !== undefined && now() - start >= options.timeBudgetMs) break
