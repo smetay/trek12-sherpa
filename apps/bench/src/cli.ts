@@ -7,6 +7,7 @@ import {
   heuristicPolicy,
   measureRollouts,
   POLICIES,
+  parseMcPolicy,
   positionAfter,
   SOLVER_VERSION,
   simulateGame,
@@ -23,7 +24,7 @@ Commands:
   help      Show this help
 
 Maps: ${MAPS.map((m) => m.id).join(', ')} (default: all real sheets)
-Policies: ${POLICIES.map((p) => p.name).join(', ')}
+Policies: ${POLICIES.map((p) => p.name).join(', ')}, mc<N> (Monte-Carlo advisor, N rollouts per candidate)
 `
 
 const { values, positionals } = parseArgs({
@@ -55,7 +56,9 @@ const maps = mapIds.map((id) => {
   const def = getMapDef(id) ?? fail(`unknown map "${id}"`)
   return compileMap(def)
 })
-const policies = policyNames.map((name) => getPolicy(name) ?? fail(`unknown policy "${name}"`))
+const policies = policyNames.map(
+  (name) => getPolicy(name) ?? parseMcPolicy(name) ?? fail(`unknown policy "${name}"`),
+)
 
 const fmt = (x: number, d = 1) => x.toFixed(d).padStart(7)
 
