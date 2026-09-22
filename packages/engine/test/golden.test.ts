@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { OP_PROD, OP_SUM } from '../src/dice.ts'
 import { compileMap, type MapDef } from '../src/map.ts'
+import { kagkotMap } from '../src/maps/kagkot.ts'
 import { scoreBreakdown } from '../src/score.ts'
 import { currentScore } from '../src/state.ts'
 import { graphMap, play, type Step } from './helpers.ts'
@@ -59,6 +60,43 @@ describe('rulebook worked examples', () => {
     expect(b.zoneBonus).toBe(1)
     expect(b.orphanCells).toEqual([17])
     expect(b.sadCells).toEqual([])
+    expect(b.total).toBe(88)
+    expect(currentScore(map, s)).toBe(88)
+  })
+
+  it('FR example replayed on the real Kagkot grid = 88', () => {
+    // Cell numbers refer to packages/engine/src/maps/kagkot.ts; the placement order is one that
+    // reproduces exactly the links drawn in the rulebook picture under the mandatory-link rule.
+    const map = compileMap(kagkotMap)
+    const s = play(map, [
+      { cell: 13, value: 7, op: OP_SUM },
+      { cell: 10, value: 6, up: 13 },
+      { cell: 11, value: 5, up: 10 },
+      { cell: 14, value: 4, up: 11 },
+      { cell: 15, value: 3, up: 14 },
+      { cell: 17, value: 2, up: 15 },
+      { cell: 16, value: 1, up: 17 },
+      { cell: 18, value: 0, up: 16 },
+      { cell: 6, value: 6 },
+      { cell: 4, value: 6 },
+      { cell: 8, value: 11, op: OP_SUM },
+      { cell: 7, value: 12, down: 8 },
+      { cell: 9, value: 12 },
+      { cell: 12, value: 11, op: OP_SUM, up: 9 },
+      { cell: 0, value: 1 },
+      { cell: 1, value: 2, down: 0 },
+      { cell: 3, value: 3, down: 1 },
+      { cell: 2, value: 3 },
+      { cell: 5, value: 7, op: OP_SUM },
+    ])
+    const b = scoreBreakdown(map, s)
+    expect(b.chains.map((c) => c.points).sort((x, y) => x - y)).toEqual([5, 13, 13, 14])
+    expect(b.chains.find((c) => c.points === 14)?.cells).toEqual([18, 16, 17, 15, 14, 11, 10, 13])
+    expect(b.chainBonus).toBe(20)
+    expect(b.zones.map((z) => z.points).sort((x, y) => x - y)).toEqual([4, 8, 13])
+    expect(b.zones.find((z) => z.points === 8)?.cells).toEqual([4, 6, 10])
+    expect(b.zoneBonus).toBe(1)
+    expect(b.orphanCells).toEqual([5])
     expect(b.total).toBe(88)
     expect(currentScore(map, s)).toBe(88)
   })

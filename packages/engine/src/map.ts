@@ -25,6 +25,8 @@ export type MapDef = {
   status: MapStatus
   /** Score threshold printed on the sheet ("65+"). */
   summit: number
+  /** Reputation stars printed on the sheet [summit, race to the summit, record] — Expedition mode only. */
+  stars?: [number, number, number]
   cells: CellDef[]
   /** Undirected adjacency, each pair listed once. */
   edges: [number, number][]

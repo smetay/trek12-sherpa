@@ -1,0 +1,75 @@
+import type { MapDef } from '../map.ts'
+
+/**
+ * Dunai — base game sheet (65+).
+ * The beginner sheet: a dense band of 19 circles, none of them dangerous.
+ *
+ * Digitised from a photo of the sheet (circle detection + outline-width classification), then
+ * checked by eye pair by pair; only abstract graph data is stored. Verify in the app before
+ * trusting it (`status: 'verified'` once a human has confirmed every adjacency on a real sheet).
+ */
+export const dunaiMap: MapDef = {
+  id: 'dunai',
+  name: 'Dunai',
+  rev: 1,
+  status: 'draft',
+  summit: 65,
+  stars: [1, 1, 1],
+  opLimits: [4, 4, 4, 4, 4],
+  cells: [
+    { id: 0, x: -2.763, y: -1.543, max: 12 },
+    { id: 1, x: -1.796, y: -1.779, max: 12 },
+    { id: 2, x: -2.533, y: -0.565, max: 12 },
+    { id: 3, x: -1.548, y: -0.357, max: 12 },
+    { id: 4, x: -0.555, y: -0.137, max: 12 },
+    { id: 5, x: 0.223, y: -0.771, max: 12 },
+    { id: 6, x: -3.196, y: 0.179, max: 12 },
+    { id: 7, x: -2.883, y: 1.138, max: 12 },
+    { id: 8, x: -2.221, y: 0.403, max: 12 },
+    { id: 9, x: -1.901, y: 1.351, max: 12 },
+    { id: 10, x: -1.243, y: 0.614, max: 12 },
+    { id: 11, x: -0.93, y: 1.577, max: 12 },
+    { id: 12, x: -0.267, y: 0.829, max: 12 },
+    { id: 13, x: 0.045, y: 1.779, max: 12 },
+    { id: 14, x: 0.696, y: 1.042, max: 12 },
+    { id: 15, x: 1.287, y: 0.241, max: 12 },
+    { id: 16, x: 1.683, y: 1.151, max: 12 },
+    { id: 17, x: 2.259, y: 0.348, max: 12 },
+    { id: 18, x: 3.196, y: 0.736, max: 12 },
+  ],
+  edges: [
+    [0, 1],
+    [0, 2],
+    [2, 3],
+    [2, 6],
+    [2, 8],
+    [3, 4],
+    [3, 8],
+    [3, 10],
+    [4, 5],
+    [4, 10],
+    [4, 12],
+    [6, 7],
+    [6, 8],
+    [7, 8],
+    [7, 9],
+    [8, 9],
+    [8, 10],
+    [9, 10],
+    [9, 11],
+    [10, 11],
+    [10, 12],
+    [11, 12],
+    [11, 13],
+    [12, 13],
+    [12, 14],
+    [13, 14],
+    [14, 15],
+    [14, 16],
+    [15, 16],
+    [15, 17],
+    [16, 17],
+    [17, 18],
+  ],
+  nonAdjacentPairs: [],
+}
