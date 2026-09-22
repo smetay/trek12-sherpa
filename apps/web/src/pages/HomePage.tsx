@@ -84,6 +84,13 @@ export function HomePage() {
         solveur {SOLVER_VERSION} ·{' '}
         <a
           className="underline decoration-slate-600 underline-offset-2"
+          href={href({ name: 'perf' })}
+        >
+          performance
+        </a>{' '}
+        ·{' '}
+        <a
+          className="underline decoration-slate-600 underline-offset-2"
           href="https://github.com/smetay/trek12-sherpa"
         >
           code source

@@ -1,12 +1,17 @@
 import { useEffect, useState } from 'react'
 
 /** Minimal hash router: `#/`, `#/maps/:id/verify`, … Works offline and under any base path. */
-export type Route = { name: 'home' } | { name: 'verify'; mapId: string } | { name: 'notFound' }
+export type Route =
+  | { name: 'home' }
+  | { name: 'verify'; mapId: string }
+  | { name: 'perf' }
+  | { name: 'notFound' }
 
 export function parseHash(hash: string): Route {
   const path = hash.replace(/^#/, '') || '/'
   const verify = /^\/maps\/([a-z0-9-]+)\/verify\/?$/.exec(path)
   if (verify) return { name: 'verify', mapId: verify[1] }
+  if (path === '/perf' || path === '/perf/') return { name: 'perf' }
   if (path === '/') return { name: 'home' }
   return { name: 'notFound' }
 }
@@ -27,6 +32,8 @@ export function href(route: Route): string {
       return '#/'
     case 'verify':
       return `#/maps/${route.mapId}/verify`
+    case 'perf':
+      return '#/perf'
     default:
       return '#/'
   }
