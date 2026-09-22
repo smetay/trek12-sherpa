@@ -1,0 +1,22 @@
+{
+  "name": "@trek12/solver",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Trek 12 move advisor: policies, Monte-Carlo root search, exact endgame, worker pool protocol.",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@trek12/engine": "workspace:*"
+  },
+  "devDependencies": {
+    "fast-check": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

@@ -1,0 +1,17 @@
+name: Rules question
+description: You think the engine interprets a rule differently from the rulebook
+labels: [rules]
+body:
+  - type: textarea
+    id: rule
+    attributes:
+      label: Which rule, and what does the engine do?
+      description: Quote the rulebook section (page / heading) and describe the situation.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What should happen instead?
+    validations:
+      required: true
