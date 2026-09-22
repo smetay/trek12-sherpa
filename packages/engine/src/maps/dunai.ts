@@ -5,14 +5,15 @@ import type { MapDef } from '../map.ts'
  * The beginner sheet: a dense band of 19 circles, none of them dangerous.
  *
  * Digitised from a photo of the sheet (circle detection + outline-width classification), then
- * checked by eye pair by pair; only abstract graph data is stored. Verify in the app before
- * trusting it (`status: 'verified'` once a human has confirmed every adjacency on a real sheet).
+ * checked by eye pair by pair; only abstract graph data is stored.
+ * Verified circle by circle against a physical sheet with the in-app verification screen
+ * (19/19 OK, 2026-09-22).
  */
 export const dunaiMap: MapDef = {
   id: 'dunai',
   name: 'Dunai',
   rev: 1,
-  status: 'draft',
+  status: 'verified',
   summit: 65,
   stars: [1, 1, 1],
   opLimits: [4, 4, 4, 4, 4],

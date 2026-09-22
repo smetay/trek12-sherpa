@@ -5,14 +5,15 @@ import type { MapDef } from '../map.ts'
  * The hardest sheet: sparse, with six dangerous circles including the summit.
  *
  * Digitised from a photo of the sheet (circle detection + outline-width classification), then
- * checked by eye pair by pair; only abstract graph data is stored. Verify in the app before
- * trusting it (`status: 'verified'` once a human has confirmed every adjacency on a real sheet).
+ * checked by eye pair by pair; only abstract graph data is stored.
+ * Verified circle by circle against a physical sheet with the in-app verification screen
+ * (19/19 OK, 2026-09-22).
  */
 export const dhaulagiriMap: MapDef = {
   id: 'dhaulagiri',
   name: 'Dhaulagiri',
   rev: 1,
-  status: 'draft',
+  status: 'verified',
   summit: 75,
   stars: [5, 3, 1],
   opLimits: [4, 4, 4, 4, 4],

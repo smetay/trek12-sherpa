@@ -13,9 +13,9 @@
 
 | Milestone | State |
 |---|---|
-| M0 — repo scaffold, CI, GitHub Pages | 🚧 in progress |
-| M1 — rules engine | ⏳ |
-| M2 — policies + benchmark harness | ⏳ |
+| M0 — repo scaffold, CI, GitHub Pages | ✅ |
+| M1 — rules engine, the three base sheets digitised and verified | ✅ |
+| M2 — policies + benchmark harness | 🚧 next |
 | M3 — Monte-Carlo solver + exact endgame | ⏳ |
 | M4 — web UI | ⏳ |
 | M5 — v1.0.0 | ⏳ |
