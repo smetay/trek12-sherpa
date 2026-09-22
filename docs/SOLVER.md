@@ -25,10 +25,10 @@ advise() (mc/advisor.ts) drives a Race over a SolverPool of workers; results are
 ### Rollout policies (`policy/`)
 
 - `random`, `greedy` (best immediate score change) and `heuristic` (greedy plus expected-value
-  features: orphan rescue, open chain ends, zone growth, tick scarcity, a little noise). The
-  heuristic is the playout policy of the Monte-Carlo search; its weights were found by
-  cross-entropy search (`pnpm bench tune`, see `docs/BENCHMARKS.md`) and `heuristic-v1` keeps the
-  hand-set weights of v1.0.0 for comparisons.
+  features: orphan rescue, open chain ends, zone growth, tick scarcity). The heuristic is the
+  playout policy of the Monte-Carlo search; its weights were found by cross-entropy search
+  (`pnpm bench tune`, see `docs/BENCHMARKS.md`) and `heuristic-v1` keeps the hand-set weights of
+  v1.0.0 for comparisons.
 - Ties are broken uniformly at random. Taking the first best candidate instead costs ~13 points
   (it systematically favours the lowest operation and cell indices).
 
@@ -95,17 +95,17 @@ interrupted at the time budget (1.5 s by default) with the current ranking.
 
 ## Strength
 
-`pnpm bench compare --policy heuristic-v1,mc288@heuristic-v1,mc288 --games 40 --seed 100`
+`pnpm bench compare --policy heuristic-v1,heuristic,mc288@heuristic-v1,mc288 --games 80 --seed 200`
 (paired seeds; `mc288` = root race with up to 288 rollouts per surviving candidate):
 
-| Sheet | heuristic-v1 | advisor v1.0.0 | advisor v1.1 (exact last ply + 3-empty endgame) |
-|---|---:|---:|---:|
-| Dunai (65+) | 64.3 | 89.0 | **91.0** |
-| Kagkot (70+) | 61.4 | 83.2 | **84.5** |
-| Dhaulagiri (75+) | 58.5 | 83.8 | **83.6** |
+| Sheet | heuristic-v1 | heuristic (shipped) | advisor with v1 rollouts | **advisor v1.1** |
+|---|---:|---:|---:|---:|
+| Dunai (65+) | 66.6 | 66.5 | 88.2 | **89.7** |
+| Kagkot (70+) | 60.8 | 62.0 | 81.6 | **82.5** |
+| Dhaulagiri (75+) | 60.4 | 63.6 | 84.1 | **83.7** |
 
 Every mean is well above the printed summit threshold. See `docs/BENCHMARKS.md` for the baseline
-policies and the weight tuning.
+policies, the weight tuning and the search-change comparison against v1.0.0.
 
 ## Roadmap for the solver
 

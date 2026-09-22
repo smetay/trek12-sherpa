@@ -39,8 +39,9 @@ export const V1_WEIGHTS: HeuristicWeights = {
 
 /**
  * Current weights: cross-entropy search (`pnpm bench tune`, 30 generations × 24 candidates × 800
- * games on the three sheets, seed 1), then rounded. Held-out: 63.2 → 64.7 points for the greedy
- * heuristic. See docs/BENCHMARKS.md.
+ * games on the three sheets, seed 1), rounded, with the noise term removed: the search found that a
+ * little randomness helps a greedy player, but inside the Monte-Carlo search it only adds variance
+ * (240 paired games, docs/BENCHMARKS.md).
  */
 export const DEFAULT_WEIGHTS: HeuristicWeights = {
   rescue: 1.25,
@@ -48,7 +49,7 @@ export const DEFAULT_WEIGHTS: HeuristicWeights = {
   zone: 0.34,
   ticks: 1.43,
   danger: 0.83,
-  noise: 0.17,
+  noise: 0,
 }
 
 const TICK_BASE = new Float64Array(OP_COUNT)
