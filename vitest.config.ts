@@ -10,10 +10,14 @@ const project = (name: string, root: string) => ({
   test: { name, root, environment: 'node' as const },
 })
 
+// Deep property runs (FC_RUNS=5000) legitimately take minutes; give them room.
+const deep = Number(process.env.FC_RUNS ?? 100) > 100
+
 export default defineConfig({
   test: {
     passWithNoTests: true,
     setupFiles: [setup],
+    testTimeout: deep ? 600_000 : 5_000,
     projects: [
       project('engine', './packages/engine'),
       project('solver', './packages/solver'),
