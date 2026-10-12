@@ -27,7 +27,7 @@
     "e2e": "pnpm --filter @trek12/web e2e"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.5.14",
+    "@biomejs/biome": "2.5.15",
     "@types/node": "catalog:",
     "fast-check": "catalog:",
     "typescript": "catalog:",
