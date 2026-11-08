@@ -5,6 +5,7 @@ import {
   type ReviewSource,
   reviewGame,
   rollsOf,
+  SheetReconstructor,
   sherpaLine,
   solveHindsight,
   type TurnReview,
@@ -14,6 +15,7 @@ import { getPool } from './advice.ts'
 import {
   completeDice,
   diceKey,
+  EMPTY_CELL,
   type Player,
   playerKey,
   type ReviewSession,
@@ -240,4 +242,31 @@ export function startReview(playerId: string, fromTurn = 0): void {
       useReview.getState().setReview(playerId, { key, turns, done: turns.length === map.n })
     },
   })
+}
+
+/** Whether a player's game can be reviewed: a full sheet the dice can produce, or recorded moves. */
+export function readyForReview(s: ReviewSession, player: Player): boolean {
+  const map = mapOf(s)
+  const dice = completeDice(s.dice)
+  if (!map || !dice || player.sheet.some((v) => v === EMPTY_CELL)) return false
+  if (player.moves) return true
+  return new SheetReconstructor(map, rollsOf(dice), player.sheet).diagnose().feasible
+}
+
+/**
+ * The end of the spoiler-free entry: shows the results and computes everything in the order the
+ * players care about — the maximum, each ready player's review, then the Sherpa's own game.
+ */
+export function revealAll(): void {
+  const s = session()
+  if (!completeDice(s.dice)) return
+  useReview.getState().setRevealed(true)
+  const key = diceKey(s.mapId, s.dice)
+  if (s.hindsight?.key !== key) startHindsight()
+  for (const p of s.players) {
+    const review = p.review?.key === playerKey(s, p) ? p.review : null
+    if (review?.done || !readyForReview(s, p)) continue
+    startReview(p.id, review ? review.turns.length : 0)
+  }
+  if (s.sherpa?.key !== key) startSherpa()
 }

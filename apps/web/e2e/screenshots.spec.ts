@@ -47,14 +47,14 @@ test('screenshot of the analysis (fr)', async ({ page }) => {
   await page.getByRole('button', { name: 'Saisir en texte' }).click()
   await page.locator('#dice-text').fill('12 24 12 26 43 45 45 41 02 06 16 42 45 22 02 56 11 14 04')
   await page.getByRole('button', { name: 'Valider' }).click()
-  await expect(page.getByText(/recherches? indépendantes?/)).toBeVisible({ timeout: 90_000 })
   await page.getByRole('button', { name: /Ajouter un joueur/ }).click()
   await page.getByRole('button', { name: /^Case 0 :/ }).click()
   const pad = page.locator('div.fixed.inset-x-0.bottom-0')
   for (const v of [2, 5, 4, 1, 3, 4, 2, 2, 2, 0, 2, 1, 1, 2, 3, 4, 5, 4, 5]) {
     await pad.getByRole('button', { name: String(v), exact: true }).click()
   }
-  await page.getByRole('button', { name: 'Analyser la partie' }).click()
+  await page.getByRole('button', { name: 'Calculer et révéler les résultats' }).click()
+  await expect(page.getByText(/recherches? indépendantes?/)).toBeVisible({ timeout: 90_000 })
   await expect(page.getByText(/Analyse du tour/)).toHaveCount(0, { timeout: 90_000 })
   const report = page.getByText('Points perdus en décisions').locator('xpath=ancestor::section[1]')
   await report

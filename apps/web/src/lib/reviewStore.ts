@@ -51,6 +51,11 @@ export type Player = {
 
 export type ReviewSession = {
   mapId: string
+  /**
+   * Results shown. Off by default: dice and sheets are entered without any spoiler, nothing is
+   * computed, and everything is computed and revealed at the end in one go.
+   */
+  revealed: boolean
   dice: DiceEntry[]
   diceDoubts: { turn: number; die: Die }[]
   hindsight: StoredHindsight | null
@@ -65,7 +70,15 @@ export const SAD_CELL = 13
 const emptyDice = (): DiceEntry[] => Array.from({ length: TURNS }, () => ({ y: null, r: null }))
 
 export function newSession(mapId = 'dunai'): ReviewSession {
-  return { mapId, dice: emptyDice(), diceDoubts: [], hindsight: null, sherpa: null, players: [] }
+  return {
+    mapId,
+    revealed: false,
+    dice: emptyDice(),
+    diceDoubts: [],
+    hindsight: null,
+    sherpa: null,
+    players: [],
+  }
 }
 
 /** The 19 rolls when complete, else null. */
@@ -136,8 +149,12 @@ type Store = {
   setHindsight(result: StoredHindsight | null): void
   setSherpa(result: StoredLine | null): void
   setReview(id: string, review: StoredReview | null): void
-  /** Starts an analysis of a game played in the app (dice and moves known). */
-  fromRecord(record: GameRecord, name: string): void
+  setRevealed(revealed: boolean): void
+  /**
+   * Starts an analysis of a game played in the app (dice and moves known), results shown; returns
+   * the player's id, or null when the record cannot be replayed.
+   */
+  fromRecord(record: GameRecord, name: string): string | null
 }
 
 const updatePlayers = (s: ReviewSession, id: string, f: (p: Player) => Player): ReviewSession => ({
@@ -155,6 +172,7 @@ export const useReview = create<Store>()(
           session: {
             ...session,
             mapId,
+            revealed: false,
             hindsight: null,
             sherpa: null,
             // A sheet belongs to one map: changing the map clears the circles.
@@ -215,17 +233,19 @@ export const useReview = create<Store>()(
       setSherpa: (sherpa) => set(({ session }) => ({ session: { ...session, sherpa } })),
       setReview: (id, review) =>
         set(({ session }) => ({ session: updatePlayers(session, id, (p) => ({ ...p, review })) })),
+      setRevealed: (revealed) => set(({ session }) => ({ session: { ...session, revealed } })),
       fromRecord: (record, name) => {
         const map = compileFor(record)
-        if (!map) return
-        const session = newSession(record.mapId)
+        if (!map) return null
+        // The player asked for this analysis at the end of their game: nothing to hide.
+        const session = { ...newSession(record.mapId), revealed: true }
         const player = newPlayer(name, map.n)
         const s = createState(map)
         const moves: number[] = []
         for (const [t, e] of record.history.entries()) {
           if (t >= TURNS) break
           const m = findMove(map, s, e)
-          if (m === -1) return
+          if (m === -1) return null
           session.dice[t] = { y: e.y, r: e.r }
           moves.push(m)
           applyMove(map, s, m)
@@ -233,6 +253,7 @@ export const useReview = create<Store>()(
         player.sheet = Array.from({ length: map.n }, (_, c) => s[map.oVal + c])
         player.moves = moves.length === map.n ? moves : null
         set({ session: { ...session, players: [player] } })
+        return player.id
       },
     }),
     {
@@ -248,7 +269,12 @@ export const useReview = create<Store>()(
           Array.isArray(s.dice) &&
           s.dice.length === TURNS &&
           Array.isArray(s.players)
-        return { ...current, session: valid ? (s as ReviewSession) : current.session }
+        return {
+          ...current,
+          session: valid
+            ? { ...(s as ReviewSession), revealed: s.revealed === true }
+            : current.session,
+        }
       },
     },
   ),

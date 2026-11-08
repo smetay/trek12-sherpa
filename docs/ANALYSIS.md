@@ -1,7 +1,8 @@
 # Post-game analysis
 
 `#/review` in the app, "Analyser une partie" on the home screen. After a game played on paper (or in
-the app), the players enter — or photograph — the 19 rolls and their sheets, and get three answers:
+the app), the players enter — or photograph — the 19 rolls and their sheets **without any spoiler**,
+then press *Calculer et révéler les résultats* and get three answers:
 
 1. **The best score these dice allowed** (the clairvoyant maximum, every roll known in advance).
 2. **What the Sherpa would have scored** on the same dice, deciding turn by turn without seeing ahead.
@@ -134,10 +135,19 @@ can disturb a reading, and the consistency check against the dice catches most s
 
 ## Interface decisions
 
+- **Spoiler-free entry, reveal at the end.** By default nothing about the best play is computed or
+  shown while the rolls and the sheets are entered: a "Résultats cachés" panel lists what is ready
+  (19/19 rolls, each player's sheet ready, incomplete or to check) and one button computes and
+  reveals everything in the order players care about — the maximum, each ready player's review,
+  then the Sherpa's game — under a single results ladder (maximum, Sherpa, players by score with
+  the points their decisions cost). Nothing runs in the background before that, which also keeps
+  the phone free for the photo reading. *Masquer les résultats* hides them again, e.g. to hand the
+  phone to a player who has not entered their sheet yet. Analysing a game played in the app starts
+  revealed: the player asked for it at the end of their game.
 - **Input first, computation last, never blocking.** Typing the dice and the sheets is instant and
-  local; the maximum starts by itself once the 19 rolls are known and streams its best score; each
-  player's review starts on demand and fills in turn by turn. Computations run one at a time on the
-  shared workers and are dropped as soon as the data they were started from changes.
+  local; once revealed, the maximum streams its best score and each review fills in turn by turn.
+  Computations run one at a time on the shared workers and are dropped as soon as the data they were
+  started from changes.
 - **Fast entry.** The 19 rolls fit on one phone screen as a 5-column grid of die pairs; a docked
   keypad (the same die faces as during a game) jumps to the next missing roll as soon as both dice
   are set. Power users paste "54 16 55…". Sheets are typed with a 0–12 + ☹ pad that walks to the next
@@ -148,8 +158,9 @@ can disturb a reading, and the consistency check against the dice catches most s
   analysis, with the guilty circles outlined.
 - **Honesty about uncertainty.** "Best score found" with the agreement of independent searches, not
   a fake proof; inferred orders are labelled and correctable; tied moves count as good moves.
-- **One page, top to bottom**: sheet → dice → maximum → Sherpa → players. Everything is visible and
-  editable at any time (no wizard to step back through), and the whole session survives a reload.
+- **One page, top to bottom**: sheet → dice → players → reveal; once revealed: results → maximum →
+  Sherpa → players. Everything stays editable at any time (no wizard to step back through), and the
+  whole session survives a reload.
 - **Multi-player by design**: Trek 12 players share the dice, so one dice log serves every sheet.
 - Accessible like the rest of the app: real buttons, labelled circles, progress bars with values,
   colour never the only signal (grades also have a symbol or a number).

@@ -17,12 +17,15 @@ import { SheetEditor } from '../components/review/SheetEditor.tsx'
 import { SheetScan } from '../components/review/SheetScan.tsx'
 import {
   type JobKind,
+  readyForReview,
   restoreTurn,
+  revealAll,
   startHindsight,
   startReview,
   startSherpa,
   useJobs,
 } from '../lib/analysis.ts'
+import { num } from '../lib/format.ts'
 import { DICT, type Dict, type Lang } from '../lib/i18n.ts'
 import {
   completeDice,
@@ -131,6 +134,195 @@ function CountCheck({
     <p className={`text-sm font-medium ${ok ? 'text-best' : 'text-far'}`}>
       {ok ? t.countOk : t.countRange(lo, hi)}
     </p>
+  )
+}
+
+/** A player's score under the rules and, once reviewed, the points their decisions cost. */
+function playerSummary(
+  map: CompiledMap,
+  rolls: Rolls | null,
+  session: ReviewSession,
+  player: Player,
+): { score: number | null; lost: number | null } {
+  if (!rolls || player.sheet.some((v) => v === EMPTY_CELL)) return { score: null, lost: null }
+  const review = player.review?.key === playerKey(session, player) ? player.review : null
+  if (review?.done) {
+    try {
+      const states = lineStates(
+        map,
+        rolls,
+        review.turns.map((r) => r.played),
+      )
+      return {
+        score: currentScore(map, states[states.length - 1]),
+        lost: review.turns.reduce((a, r) => a + r.loss, 0),
+      }
+    } catch {
+      // fall through to the sheet's own score
+    }
+  }
+  if (player.moves) return { score: recordedScore(map, rolls, player.moves), lost: null }
+  const score = new SheetReconstructor(map, rolls, player.sheet).sampleScores(0)[0]
+  return { score: score ?? null, lost: null }
+}
+
+/**
+ * Spoiler-free entry: nothing about the best play is computed or shown until the players ask for
+ * it. Lists what is ready and reveals everything in one go.
+ */
+function RevealPanel({
+  map,
+  session,
+  rolls,
+  t,
+}: {
+  map: CompiledMap
+  session: ReviewSession
+  rolls: Rolls | null
+  t: Dict
+}) {
+  const filled = session.dice.filter((d) => d.y !== null && d.r !== null).length
+  const rows = session.players.map((p) => {
+    const cells = p.sheet.filter((v) => v !== EMPTY_CELL).length
+    const ready = rolls !== null && readyForReview(session, p)
+    return {
+      id: p.id,
+      ok: ready,
+      text: ready
+        ? t.playerReady(p.name)
+        : cells < map.n
+          ? t.playerCells(p.name, cells, map.n)
+          : rolls
+            ? t.playerCheck(p.name)
+            : t.playerWaitsDice(p.name),
+    }
+  })
+  return (
+    <section className={`${card} flex flex-col gap-3`} aria-labelledby="reveal-h">
+      <div>
+        <h2 id="reveal-h" className="font-semibold">
+          {t.hiddenTitle}
+        </h2>
+        <p className="mt-1 text-sm text-muted">{t.hiddenExplain}</p>
+      </div>
+      <ul className="flex flex-col gap-1 text-sm">
+        <li className="flex items-center gap-2">
+          <span aria-hidden="true">{filled === 19 ? '✓' : '…'}</span>
+          {t.rollsReady(filled)}
+        </li>
+        {rows.map((r) => (
+          <li key={r.id} className="flex items-center gap-2">
+            <span aria-hidden="true">{r.ok ? '✓' : '…'}</span>
+            {r.text}
+          </li>
+        ))}
+      </ul>
+      <button
+        type="button"
+        onClick={() => {
+          revealAll()
+          // The button sits at the bottom of the page; the results appear at the top.
+          requestAnimationFrame(() =>
+            document.getElementById('results-h')?.scrollIntoView({ block: 'start' }),
+          )
+        }}
+        disabled={!rolls}
+        className={primary}
+      >
+        {t.reveal}
+      </button>
+      <p className="text-xs text-muted">{rolls ? t.revealHint : t.maxNeedsDice}</p>
+    </section>
+  )
+}
+
+/** Everyone on one ladder once revealed: the ceiling, the fair benchmark, then the players. */
+function ResultsCard({
+  map,
+  session,
+  rolls,
+  t,
+  lang,
+}: {
+  map: CompiledMap
+  session: ReviewSession
+  rolls: Rolls | null
+  t: Dict
+  lang: Lang
+}) {
+  const key = diceKey(session.mapId, session.dice)
+  const h = session.hindsight?.key === key ? session.hindsight : null
+  const sherpa = session.sherpa?.key === key ? session.sherpa : null
+  const running = useJobs((s) => s.running)
+  const rows: { id: string; label: string; score: number | null; note: string; strong: boolean }[] =
+    [
+      {
+        id: 'max',
+        label: t.maxTitle,
+        score: h?.score ?? null,
+        note: h?.done ? t.bestFound : t.searching,
+        strong: false,
+      },
+      {
+        id: 'sherpa',
+        label: t.sherpaShort,
+        score: sherpa?.score ?? null,
+        note: sherpa ? t.sherpaNote : t.waiting,
+        strong: false,
+      },
+      ...session.players.map((p) => {
+        const sum = playerSummary(map, rolls, session, p)
+        const analysing = running === `review:${p.id}`
+        return {
+          id: p.id,
+          label: p.name,
+          score: sum.score,
+          note:
+            sum.lost !== null
+              ? t.lostShort(num(sum.lost, lang))
+              : analysing
+                ? t.analysingShort
+                : '',
+          strong: true,
+        }
+      }),
+    ]
+  const sorted = rows
+    .filter((r) => r.score !== null || r.id === 'max' || r.id === 'sherpa')
+    .sort((a, b) => (b.score ?? -999) - (a.score ?? -999))
+  return (
+    <section className={`${card} flex flex-col gap-2`} aria-labelledby="results-h">
+      <div className="flex items-center justify-between gap-2">
+        <h2 id="results-h" className="font-semibold">
+          {t.resultsTitle}
+        </h2>
+        <button
+          type="button"
+          onClick={() => useReview.getState().setRevealed(false)}
+          className="text-sm text-muted underline underline-offset-2"
+        >
+          {t.hideResults}
+        </button>
+      </div>
+      <ol className="flex flex-col" aria-live="polite">
+        {sorted.map((r) => (
+          <li
+            key={r.id}
+            className="flex items-baseline gap-2 border-b border-line py-1.5 last:border-b-0"
+          >
+            <span
+              className={`min-w-0 flex-1 truncate ${r.strong ? 'font-semibold' : 'text-muted'}`}
+            >
+              {r.label}
+            </span>
+            <span className="shrink-0 text-xs text-muted">{r.note}</span>
+            <span className={`w-10 shrink-0 text-right text-lg ${r.strong ? 'font-bold' : ''}`}>
+              {r.score ?? '…'}
+            </span>
+          </li>
+        ))}
+      </ol>
+    </section>
   )
 }
 
@@ -291,6 +483,7 @@ function PlayerCard({
   t: Dict
   lang: Lang
 }) {
+  const revealed = session.revealed
   const { setCell, updatePlayer, removePlayer, setChoice } = useReview()
   const job = useJob(`review:${player.id}`)
   const [scanFile, setScanFile] = useState<File | null>(null)
@@ -387,7 +580,7 @@ function PlayerCard({
         </button>
       </div>
 
-      {(!review?.done || showSheet) && (
+      {(!revealed || !review?.done || showSheet) && (
         <>
           <div className="flex items-center justify-between gap-2">
             <p className="text-sm text-muted">
@@ -449,19 +642,20 @@ function PlayerCard({
         </>
       )}
 
-      {(job.running || job.queued) && (
+      {revealed && (job.running || job.queued) && (
         <Progress
           value={job.progress}
           label={job.queued ? t.waiting : t.analysing(Math.min(turns.length + 1, map.n), map.n)}
         />
       )}
 
-      {states &&
+      {revealed &&
+        states &&
         turns.length > 0 &&
         turns.some((r) => !r.confirmed && r.alternatives.length > 0) && (
           <p className="rounded-lg bg-bg p-2 text-xs text-muted">{t.indicative}</p>
         )}
-      {states && turns.length > 0 && (
+      {revealed && states && turns.length > 0 && (
         <PlayerReport
           map={map}
           turns={turns}
@@ -504,7 +698,7 @@ function PlayerCard({
         <CountCheck claimed={player.claimed} score={finalScore} range={range} t={t} />
       )}
 
-      {!job.running && !job.queued && (
+      {revealed && !job.running && !job.queued && (
         <div className="flex flex-wrap gap-2">
           {!review?.done ? (
             <button
@@ -632,8 +826,13 @@ export function ReviewPage() {
         />
       </section>
 
-      <MaxCard map={map} session={session} rolls={rolls} t={t} />
-      <SherpaCard map={map} session={session} rolls={rolls} t={t} />
+      {session.revealed && (
+        <>
+          <ResultsCard map={map} session={session} rolls={rolls} t={t} lang={lang} />
+          <MaxCard map={map} session={session} rolls={rolls} t={t} />
+          <SherpaCard map={map} session={session} rolls={rolls} t={t} />
+        </>
+      )}
 
       <section aria-labelledby="players-h" className="flex flex-col gap-3">
         <div>
@@ -661,6 +860,8 @@ export function ReviewPage() {
           + {t.addPlayer}
         </button>
       </section>
+
+      {!session.revealed && <RevealPanel map={map} session={session} rolls={rolls} t={t} />}
 
       {diceFile && (
         <DiceScan

@@ -24,6 +24,7 @@ import { ChoiceTable, type OpVerdict } from '../components/ChoiceTable.tsx'
 import { DiceChip, DiceInput } from '../components/DiceInput.tsx'
 import { type CellVisual, MapSvg, wash } from '../components/MapSvg.tsx'
 import { useAdvice, useEstimate } from '../lib/advice.ts'
+import { startReview } from '../lib/analysis.ts'
 import { lossText, num, pct } from '../lib/format.ts'
 import { cellLabel, describeLinks, linksOf, useGame, viewMove } from '../lib/game.ts'
 import { cellHeats, HEAT_COLOR, opHeats } from '../lib/heat.ts'
@@ -413,7 +414,8 @@ function EndScreen({
           const started =
             session.players.length > 0 || session.dice.some((d) => d.y !== null || d.r !== null)
           if (started && !window.confirm(t.confirmNewAnalysis)) return
-          useReview.getState().fromRecord(record, t.me)
+          const id = useReview.getState().fromRecord(record, t.me)
+          if (id) startReview(id)
           window.location.hash = href({ name: 'review' })
         }}
         className="rounded-xl bg-ink px-3 py-3 text-center font-bold text-bg"

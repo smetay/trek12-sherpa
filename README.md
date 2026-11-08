@@ -17,8 +17,8 @@ where to write the result and which rope links to draw.
   tied, then yellow, orange and red as the loss grows. The best circle carries a ★.
 - **Plays the whole ascent with you.** Dice in, advice in about a second, one tap to play, whether you
   follow the recommended move or pick your own. Undo, redo, and the game survives closing the app.
-- **Analyses finished games.** Type or photograph the 19 rolls and everyone's sheet: the app finds the
-  best score those dice allowed, plays its own game on them, and rates every decision of every player
+- **Analyses finished games.** Type or photograph the 19 rolls and everyone's sheet, spoiler-free, then
+  reveal everything at once: the app finds the best score those dice allowed, plays its own game on them, and rates every decision of every player
   ([docs/ANALYSIS.md](docs/ANALYSIS.md)). Photos are read on the phone itself.
 - **Honest about uncertainty.** Moves whose difference is within the noise of the simulation are shown
   as tied instead of pretending one is better.
@@ -59,9 +59,14 @@ chose. L'application fonctionne hors-ligne, sans compte ni serveur : **<https://
 Pour l'installer sur iPhone : *Partager*, puis *Sur l'écran d'accueil*.
 
 Après une partie sur papier, **Analyser une partie** : saisis ou photographie les 19 lancers et les
-feuilles des joueurs. L'application calcule le meilleur score que ces dés permettaient (en connaissant
-tous les lancers à l'avance), le score du Sherpa sur les mêmes dés sans voir la suite, et, tour par
-tour, les points que chaque décision a coûtés. Les photos sont lues sur le téléphone, sans réseau.
+feuilles des joueurs, sans rien dévoiler, puis révèle tout d'un coup à la fin. L'application calcule
+le meilleur score que ces dés permettaient (en connaissant tous les lancers à l'avance), le score du
+Sherpa sur les mêmes dés sans voir la suite, et, tour par tour, les points que chaque décision a
+coûtés. Les photos sont lues sur le téléphone, sans réseau.
+
+<p align="center">
+  <img src="docs/img/analysis-fr.jpg" alt="Analyse d'une feuille : score du joueur face au maximum possible, points perdus par décision, tour le plus coûteux avec la carte des cases et les ordres de jeu possibles" width="300">
+</p>
 
 ## Development
 
