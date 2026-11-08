@@ -2,6 +2,7 @@ import { useRoute } from './lib/router.ts'
 import { HomePage } from './pages/HomePage.tsx'
 import { PerfPage } from './pages/PerfPage.tsx'
 import { PlayPage } from './pages/PlayPage.tsx'
+import { ReviewPage } from './pages/ReviewPage.tsx'
 import { SettingsPage } from './pages/SettingsPage.tsx'
 import { VerifyMapPage } from './pages/VerifyMapPage.tsx'
 import { ReloadPrompt } from './ReloadPrompt.tsx'
@@ -17,6 +18,8 @@ function Page() {
       return <PlayPage />
     case 'settings':
       return <SettingsPage />
+    case 'review':
+      return <ReviewPage />
     default:
       return <HomePage />
   }

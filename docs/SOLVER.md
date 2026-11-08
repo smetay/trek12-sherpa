@@ -107,6 +107,38 @@ interrupted at the time budget (1.5 s by default) with the current ranking.
 Every mean is well above the printed summit threshold. See `docs/BENCHMARKS.md` for the baseline
 policies, the weight tuning and the search-change comparison against v1.0.0.
 
+## Hindsight: the clairvoyant maximum (`hindsight/`)
+
+Post-game analysis asks a different question: with **all 19 rolls known**, what was the best possible
+score? The game becomes a deterministic puzzle, solved by refinement (details and the user-facing
+side in [ANALYSIS.md](ANALYSIS.md), measurements in [BENCHMARKS.md](BENCHMARKS.md#clairvoyant-maximum-solver-040)):
+
+```
+HindsightSearch (hindsight/search.ts), one job per lane and round, spread over the worker pool
+ ├─ start   = beam search, width 256, Zobrist-merged transpositions, clairvoyant evaluation (beam.ts)
+ ├─ refine  = parallel tempering over plans (turn → circle, operation, link variant), 16 replicas (anneal.ts)
+ ├─ rounds  = 4 lanes × 4–10 rounds; the weaker of 2 elite lanes restarts from the best line, 2 stay independent
+ └─ polish  = last 6 turns solved exactly by DFS + transposition table (exact.ts)
+```
+
+- A **plan** is replayed with 19 incremental moves, about a million plans per second and per thread;
+  the decisive proposal reorders turns while keeping the numbers already on the sheet.
+- Deterministic for a seed and a number of rounds; stops after three rounds without progress, and the
+  app adds a wall-clock cap (30 s). The result says how many lanes reached the best score by their
+  own search (a line copied by elitism does not count).
+- `solveExact` is also the ground truth of the tests: on small sheets the tempering finds the exact
+  optimum, which itself matches an independent brute force.
+
+## Post-game review (`review/`)
+
+- `reviewGame` replays a game and runs the advisor at every turn with the move played **pinned**
+  (never eliminated by the race), so the loss is a paired difference measured as precisely as the
+  leader. Exact for the last turns, like during a game.
+- `SheetReconstructor` turns a finished paper sheet into the set of compatible orders of play: a DP
+  over (filled circles, ticked boxes) — rope links never affect legality — with a matching cut,
+  candidate moves per turn, a diagnosis of impossible sheets, order counting and score sampling.
+- `sherpaLine` plays the advisor's own game on the same dice: the fair benchmark for a player.
+
 ## Roadmap for the solver
 
 1. Exact solve at 4 empty cells within a node budget (needs a transposition table across chance nodes).

@@ -105,3 +105,73 @@ v1.0.0 scored 89.0 / 83.2 / 83.8 on the same seeds with 2-empty exactness and sa
 Tuned weights without noise are never significantly worse and +0.6 point on average over the 240
 paired games, so they ship. (Different seed sets give absolute means that differ by 2–3 points — only
 paired differences within one run are comparable.)
+
+## Clairvoyant maximum (solver 0.4.0)
+
+The best score a known roll sequence allows (post-game analysis, [ANALYSIS.md](ANALYSIS.md)). Same
+12 roll sequences of Kagkot throughout (`Rng(1000 + g)`, g = 0…11), one thread, a 4-core Linux
+container (slower than the Mac above). "Best known" is the best line ever found for a sequence by any
+run below, mean **107.3**; "gap" is the mean distance to it.
+
+**Beam search alone** plateaus far below — the evaluation cannot see what the known rolls will allow:
+
+| Width | 16 | 64 | 256 | 1 024 | 4 096 | 16 384 | 65 536 |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| Mean (8 or 4 sequences) | 75.9 | 82.6 | 88.4 | 90.9 | 93.8 | 96.5 ¹ | 98.5 ¹ |
+| Time per sequence | 8 ms | 20 ms | 73 ms | 0.27 s | 1.1 s | 4.8 s | 22 s |
+
+¹ on the first 4 sequences (where width 4 096 averages 92.8).
+
+**Local search over plans** from a width-256 beam start (proposals per sequence):
+
+| Method | Proposals | Mean | Gap | Time |
+|---|---:|---:|---:|---:|
+| Simulated annealing (no reorder move) | 1.6 M | 97.3 ² | — | 1.2 s |
+| Simulated annealing, with the "reorder, keep the numbers" move | 1.6 M | 100.8 | 6.6 | 1.4 s |
+| Simulated annealing, with the "reorder, keep the numbers" move | 6.4 M | 102.3 | 5.1 | 5.3 s |
+| Annealing reference: 8 restarts × 6.4 M (beam 1 024 starts) | 51 M | 106.3 | 1.0 | 47 s |
+| Parallel tempering, 16 replicas | 6.4 M | 104.7 | 2.7 | 6.0 s |
+| Parallel tempering, 16 replicas | 25.6 M | 106.8 | 0.6 | 23 s |
+| **4 lanes × 4 rounds of tempering, elitism** (100 k proposals/replica/round) | 25.6 M | **106.8** | 0.5 | 24 s |
+
+² on the first 4 sequences. Annealing temperature (2 to 10 points at the start) changed the mean by
+less than one point. Restarts land in different basins with a few points between them; replica
+exchange fixes that. The lanes set the best known line of two sequences, and their gap by round was
+3.3 → 1.7 → 0.8 → 0.3 against the best known at the time.
+
+The exact solver (`solveExact`) proves the last 6 turns of a line in ~0.15 s; 7 turns take 1.5–7 s,
+so the app polishes the last 6.
+
+**Lanes, elitism and stopping rule** (same 12 sequences; "agree" = lanes that reached the final score
+by their own search; time measured with four experiments sharing the 4 cores, about twice the
+single-thread time):
+
+| Configuration | Mean rounds | Gap | Best known reached | Time |
+|---|---:|---:|---:|---:|
+| First draft: elitism in all 4 lanes, 60 k/replica/round, 3–8 rounds, stop after 2 stale rounds | 4.2 | 2.25 | 5/12 | 15 s ³ |
+| Same, elitism in 2 lanes only | 4.1 | 2.25 | 5/12 | 31 s |
+| **Elitism in 2 lanes, 100 k/replica/round, 4–10 rounds, stop after 3 stale rounds (shipped)** | 6.2 | **0.75** | **9/12** | 53 s |
+| Same, no elitism | 6.2 | 1.0 | 8/12 | 53 s |
+
+³ measured alongside one other run.
+
+With elitism in every lane, the weakest lane adopted the best line each round and then reported it as
+its own: the first draft displayed "4 of 4 searches agree" on sequences where it was 7 points short.
+Agreement is now counted only for scores a lane reached itself, and even so it is no proof — on one
+sequence three independent lanes agreed on 99 where 103 exists — so the app says "best score found".
+
+**Shipped search on the three sheets** — `pnpm bench hindsight --games 12 --seed 1000` (12 sequences
+per sheet; the non-clairvoyant players decide turn by turn on the same dice, from
+`--policy heuristic,mc288`). "Gap" is to the best line found for the sequence by any run (this one,
+the first draft, and for Kagkot the experiments above):
+
+| Sheet | Heuristic | Advisor (mc288) | **Clairvoyant max** | Gap | Best known reached | Value of clairvoyance |
+|---|---:|---:|---:|---:|---:|---:|
+| Dunai (65+) | 60.8 | 90.6 | **114.5** | 0.25 | 11/12 | +23.9 |
+| Kagkot (70+) | 59.2 | 79.8 | **106.6** | 0.75 | 9/12 | +26.8 |
+| Dhaulagiri (75+) | 62.1 | 87.0 | **108.6** | 0.75 | 9/12 | +21.6 |
+
+About 40 s of single-thread work per sequence here (three runs sharing the cores); in the app the four
+lanes run in parallel workers, about 10 s on a laptop, and the search is capped at 30 s on a phone.
+Knowing the dice in advance is worth 22 to 27 points over the best non-clairvoyant play — the gap a
+post-game review must not blame on the player.

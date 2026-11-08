@@ -75,6 +75,9 @@ importers:
       '@trek12/solver':
         specifier: workspace:*
         version: link:../../packages/solver
+      '@trek12/vision':
+        specifier: workspace:*
+        version: link:../../packages/vision
       react:
         specifier: 19.3.0
         version: 19.3.0
@@ -139,6 +142,18 @@ importers:
       '@trek12/engine':
         specifier: workspace:*
         version: link:../engine
+    devDependencies:
+      fast-check:
+        specifier: 'catalog:'
+        version: 4.10.2
+      typescript:
+        specifier: 'catalog:'
+        version: 7.0.2
+      vitest:
+        specifier: 'catalog:'
+        version: 5.0.1(@types/node@24.13.6)(vite@8.3.0(@types/node@24.13.6)(jiti@2.7.0)(terser@5.51.2))
+
+  packages/vision:
     devDependencies:
       fast-check:
         specifier: 'catalog:'

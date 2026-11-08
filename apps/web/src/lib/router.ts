@@ -7,6 +7,7 @@ export type Route =
   | { name: 'perf' }
   | { name: 'play' }
   | { name: 'settings' }
+  | { name: 'review' }
   | { name: 'notFound' }
 
 export function parseHash(hash: string): Route {
@@ -16,6 +17,7 @@ export function parseHash(hash: string): Route {
   if (path === '/perf' || path === '/perf/') return { name: 'perf' }
   if (path === '/play' || path === '/play/') return { name: 'play' }
   if (path === '/settings' || path === '/settings/') return { name: 'settings' }
+  if (path === '/review' || path === '/review/') return { name: 'review' }
   if (path === '/') return { name: 'home' }
   return { name: 'notFound' }
 }
@@ -42,6 +44,8 @@ export function href(route: Route): string {
       return '#/play'
     case 'settings':
       return '#/settings'
+    case 'review':
+      return '#/review'
     default:
       return '#/'
   }

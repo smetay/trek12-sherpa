@@ -1,11 +1,25 @@
 // Runs directly under Node 24 (native type stripping) — no build step, no tsx:
 //   pnpm bench <command> [options]
 import { parseArgs } from 'node:util'
-import { compileMap, ENGINE_VERSION, getMapDef, MAPS } from '@trek12/engine'
+import {
+  applyMove,
+  compileMap,
+  createState,
+  currentScore,
+  ENGINE_VERSION,
+  generateMoves,
+  getMapDef,
+  MAPS,
+  MAX_MOVES,
+  Rng,
+  rollRed,
+  rollYellow,
+} from '@trek12/engine'
 import {
   DEFAULT_WEIGHTS,
   getPolicy,
   type HeuristicWeights,
+  HindsightSearch,
   heuristicPolicy,
   makeHeuristicPolicy,
   measureRollouts,
@@ -26,6 +40,9 @@ Commands:
   compare   Paired comparison         --map <id> --policy a,b,c  --games <n> --seed <n>
   perf      Rollouts per second       --map <id> --policy <name> --turns <n> --ms <n>
   tune      Cross-entropy weight search --games <n> --pop <n> --elite <n> --gens <n> --seed <n>
+  hindsight Clairvoyant maximum of random roll sequences
+            --map <id> --games <n> --seed <n> --lanes <n> --rounds <n> --iterations <n> [--policy <p>]
+            (--policy also plays each sequence without clairvoyance, e.g. mc288, for comparison)
   version   Print versions
   help      Show this help
 
@@ -48,6 +65,9 @@ const { values, positionals } = parseArgs({
     pop: { type: 'string', default: '24' },
     elite: { type: 'string', default: '6' },
     gens: { type: 'string', default: '25' },
+    lanes: { type: 'string', default: '4' },
+    rounds: { type: 'string', default: '10' },
+    iterations: { type: 'string', default: '100000' },
   },
 })
 if (values.weights) {
@@ -60,7 +80,11 @@ const seed = Number(values.seed)
 const mapIds = values.map
   ? values.map.split(',')
   : MAPS.filter((m) => m.status !== 'practice').map((m) => m.id)
-const policyNames = values.policy ? values.policy.split(',') : ['heuristic']
+const policyNames = values.policy
+  ? values.policy.split(',')
+  : command === 'hindsight'
+    ? []
+    : ['heuristic']
 
 function fail(message: string): never {
   console.error(message)
@@ -185,6 +209,56 @@ switch (command) {
     console.log(
       `held-out (${holdout} games/map, paired seeds): default ${base.toFixed(2)} → tuned ${tuned.toFixed(2)} (Δ ${(tuned - base).toFixed(2)}) in ${((performance.now() - t0) / 1000).toFixed(0)} s`,
     )
+    break
+  }
+
+  case 'hindsight': {
+    const moveBuf = new Int32Array(MAX_MOVES)
+    for (const map of maps) {
+      const best: number[] = []
+      const others = policies.map(() => [] as number[])
+      let ms = 0
+      for (let g = 0; g < games; g++) {
+        const rng = new Rng(seed + g)
+        const rolls = Uint8Array.from({ length: map.n }, () => rng.nextInt(36))
+        const t0 = performance.now()
+        const search = new HindsightSearch(map, rolls, {
+          seed: seed + g,
+          lanes: Number(values.lanes),
+          rounds: Number(values.rounds),
+          iterations: Number(values.iterations),
+        })
+        const res = search.runToEnd()
+        ms += performance.now() - t0
+        best.push(res.best.score)
+        const row = policies.map((policy, i) => {
+          // The same dice, decided turn by turn without knowing the next ones.
+          const prng = new Rng(seed * 7 + g)
+          const s = createState(map)
+          for (let t = 0; t < map.n; t++) {
+            const y = rollYellow(rolls[t])
+            const r = rollRed(rolls[t])
+            const count = generateMoves(map, s, y, r, moveBuf)
+            applyMove(map, s, moveBuf[policy.choose(map, s, y, r, moveBuf, count, prng)])
+          }
+          others[i].push(currentScore(map, s))
+          return `${policy.name} ${currentScore(map, s)}`
+        })
+        console.log(
+          `${map.def.id} game ${g}: max ${res.best.score} (round ${res.round}, ${res.agreeing}/${res.lanes} lanes agree) ${row.join(' ')}`,
+        )
+      }
+      const st = stats(best)
+      console.log(
+        `${map.def.id.padEnd(11)} clairvoyant max: mean=${fmt(st.mean)} sd=${fmt(st.sd)} min=${fmt(st.min, 0)} max=${fmt(st.max, 0)}  ${(ms / games / 1000).toFixed(1)} s/game (1 thread)`,
+      )
+      policies.forEach((policy, i) => {
+        const o = stats(others[i])
+        console.log(
+          `${''.padEnd(11)} ${policy.name.padEnd(15)}  mean=${fmt(o.mean)}  gap to max=${fmt(st.mean - o.mean)}`,
+        )
+      })
+    }
     break
   }
 

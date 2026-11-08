@@ -6,9 +6,10 @@
  */
 export { ENGINE_VERSION } from '@trek12/engine'
 
-export const SOLVER_VERSION = '0.3.0'
+export const SOLVER_VERSION = '0.4.0'
 
 export * from './exact/endgame.ts'
+export * from './hindsight/index.ts'
 export * from './mc/advisor.ts'
 export * from './mc/crn.ts'
 export * from './mc/race.ts'
@@ -21,5 +22,6 @@ export * from './policy/types.ts'
 export * from './pool/handler.ts'
 export * from './pool/pool.ts'
 export * from './pool/protocol.ts'
+export * from './review/index.ts'
 export * from './simulate.ts'
 export * from './tables.ts'

@@ -22,6 +22,7 @@ export default defineConfig({
     projects: [
       project('engine', './packages/engine', 'test/**/*.test.ts'),
       project('solver', './packages/solver', 'test/**/*.test.ts'),
+      project('vision', './packages/vision', 'test/**/*.test.ts'),
       project('bench', './apps/bench', 'test/**/*.test.ts'),
       // Playwright specs live in apps/web/e2e and must not be picked up here.
       project('web', './apps/web', 'src/**/*.test.ts'),
