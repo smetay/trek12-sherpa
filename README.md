@@ -17,6 +17,9 @@ where to write the result and which rope links to draw.
   tied, then yellow, orange and red as the loss grows. The best circle carries a ★.
 - **Plays the whole ascent with you.** Dice in, advice in about a second, one tap to play, whether you
   follow the recommended move or pick your own. Undo, redo, and the game survives closing the app.
+- **Analyses finished games.** Type or photograph the 19 rolls and everyone's sheet: the app finds the
+  best score those dice allowed, plays its own game on them, and rates every decision of every player
+  ([docs/ANALYSIS.md](docs/ANALYSIS.md)). Photos are read on the phone itself.
 - **Honest about uncertainty.** Moves whose difference is within the noise of the simulation are shown
   as tied instead of pretending one is better.
 - **Private and offline.** Everything runs in your browser: no account, no server, no tracking.
@@ -55,6 +58,11 @@ grande. Un bouton joue le coup conseillé, mais tu peux toucher n'importe quelle
 chose. L'application fonctionne hors-ligne, sans compte ni serveur : **<https://smetay.github.io/trek12-sherpa/>**.
 Pour l'installer sur iPhone : *Partager*, puis *Sur l'écran d'accueil*.
 
+Après une partie sur papier, **Analyser une partie** : saisis ou photographie les 19 lancers et les
+feuilles des joueurs. L'application calcule le meilleur score que ces dés permettaient (en connaissant
+tous les lancers à l'avance), le score du Sherpa sur les mêmes dés sans voir la suite, et, tour par
+tour, les points que chaque décision a coûtés. Les photos sont lues sur le téléphone, sans réseau.
+
 ## Development
 
 ```bash
@@ -66,7 +74,8 @@ pnpm bench help  # simulations, paired comparisons, throughput
 ```
 
 Monorepo: `packages/engine` (the rules, no dependencies), `packages/solver` (policies,
-Monte-Carlo race, exact endgame, worker pool), `apps/web` (the PWA), `apps/bench` (Node CLI).
+Monte-Carlo race, exact endgame, hindsight search, post-game review, worker pool), `packages/vision`
+(on-device reading of photographed paper), `apps/web` (the PWA), `apps/bench` (Node CLI).
 Contributions are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md) and the [roadmap](docs/ROADMAP.md).
 
 ## Disclaimer

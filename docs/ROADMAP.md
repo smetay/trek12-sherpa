@@ -17,11 +17,14 @@ phone at the game table.
 | **M5** v1.0.0 | Sheet heatmap (value to write + points lost in every playable circle, ★ on the best), "score sheet" light/dark theme with a legibility-first typeface, collapsed dice, accessibility pass, README |
 | **v1.1.0** | Solver: exact last turn inside every rollout, exact endgame extended to 3 empty cells (last-ply table + memoisation, spread over workers), cross-entropy weight tuning (`pnpm bench tune`). UI: expected final score and summit chance shown throughout the game, tap an operation to see where it is best (with each operation's cost in the choice table), dice drawn like the real ones |
 
+| **v1.2.0** | Post-game analysis ([ANALYSIS.md](ANALYSIS.md)): clairvoyant maximum of a roll sequence (beam search → parallel tempering in lanes → exact polish), the Sherpa's own game on the same dice, review of every decision (pinned moves in the race), order-of-play reconstruction of paper sheets with diagnosis, optional order entry, count check; on-device reading of photographed dice logs and ascent sheets (`packages/vision`, CNN trained on MNIST) |
+
 ## Next
 
 1. **Stronger solver** — exact solve at 4 empty cells within a node budget; tune the rollout policy
    against the Monte-Carlo objective itself rather than the greedy proxy.
-2. **Post-game review** — replay a finished game and show the points lost at each turn.
+2. **Better photo reading** — read the rope links and the ticked boxes of a scanned sheet (they pin
+   down part of the order of play); collect consented real samples to fine-tune the digit model.
 3. **Jev experiment (M3.5)** — bounded, pre-registered benchmark of TypeSafe AI's Jev as a move picker
    (bench only, never shipped). Needs an API key in a local `.env`.
 4. **Free Solo** — model the virtual opponent "Max" (same circle, higher die, +3 per orphan) and optimise

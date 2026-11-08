@@ -18,7 +18,10 @@ pnpm bench <command>         # Node CLI (apps/bench), runs TypeScript directly v
 
 - `packages/engine` — the rules. Pure TypeScript, **zero dependencies, no DOM, no Node** (tsconfig `types: []`).
   `docs/RULES.md` is the source of truth for every interpretation; a rule change = RULES.md + test + code.
-- `packages/solver` — policies, Monte-Carlo root search, exact endgame, worker-pool protocol. Environment-agnostic.
+- `packages/solver` — policies, Monte-Carlo root search, exact endgame, hindsight (clairvoyant maximum),
+  post-game review, worker-pool protocol. Environment-agnostic.
+- `packages/vision` — on-device reading of photographed dice logs and sheets (pure TS, zero dependencies;
+  the digit model is retrained with `node apps/bench/src/ocr-train.ts`, MNIST in the git-ignored `.cache/`).
 - `apps/web` — Vite + React + Tailwind PWA. Workers live in `src/worker/` (own tsconfig with the WebWorker lib).
 - `apps/bench` — Node CLI: simulations, comparisons, throughput, weight tuning, the Jev experiment.
 - `reference/` — **git-ignored**. Sheet photos and rulebook PDFs live there and nowhere else.

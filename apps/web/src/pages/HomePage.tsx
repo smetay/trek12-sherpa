@@ -2,6 +2,7 @@ import { MAPS } from '@trek12/engine'
 import { SOLVER_VERSION } from '@trek12/solver'
 import { MapSvg } from '../components/MapSvg.tsx'
 import { DICT } from '../lib/i18n.ts'
+import { useReview } from '../lib/reviewStore.ts'
 import { href } from '../lib/router.ts'
 import { useStore } from '../lib/store.ts'
 
@@ -10,6 +11,9 @@ export function HomePage() {
   const record = useStore((s) => s.record)
   const startGame = useStore((s) => s.startGame)
   const t = DICT[lang]
+  const reviewStarted = useReview(
+    (s) => s.session.players.length > 0 || s.session.dice.some((d) => d.y !== null || d.r !== null),
+  )
   const currentMap = record ? MAPS.find((m) => m.id === record.mapId) : undefined
   const inProgress = record !== null && record.history.length > 0 && record.history.length < 19
 
@@ -55,6 +59,26 @@ export function HomePage() {
             </li>
           ))}
         </ul>
+      </section>
+
+      <section>
+        <a
+          href={href({ name: 'review' })}
+          className="flex items-center gap-3 rounded-2xl border border-line bg-surface p-4 active:bg-bg"
+        >
+          <span
+            aria-hidden="true"
+            className="grid size-12 shrink-0 place-items-center rounded-xl bg-ink text-2xl text-bg"
+          >
+            ⛰
+          </span>
+          <span className="min-w-0">
+            <span className="block font-semibold">
+              {reviewStarted ? t.resumeAnalysis : t.analyse}
+            </span>
+            <span className="block text-sm text-muted">{t.analyseSub}</span>
+          </span>
+        </a>
       </section>
 
       <nav className="flex flex-wrap gap-x-4 gap-y-1 text-sm">

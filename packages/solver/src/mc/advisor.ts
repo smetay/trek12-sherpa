@@ -21,6 +21,8 @@ export type Advice = {
   rolloutsPerCandidate: number
   exact: boolean
   elapsedMs: number
+  /** The move when there was exactly one legal move (nothing to rank). */
+  onlyMove?: number
 }
 
 /**
@@ -84,5 +86,6 @@ export async function advise(
     rolloutsPerCandidate: race.exactMode ? 0 : (alive?.n ?? 0),
     exact: race.exactMode,
     elapsedMs: now() - start,
+    onlyMove: race.moves.length === 1 ? race.moves[0] : undefined,
   }
 }

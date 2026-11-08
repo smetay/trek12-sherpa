@@ -3,6 +3,7 @@ import {
   currentScore,
   EMPTY,
   entryFor,
+  type GameRecord,
   generateMoves,
   isGameOver,
   MAX_MOVES,
@@ -27,6 +28,7 @@ import { lossText, num, pct } from '../lib/format.ts'
 import { cellLabel, describeLinks, linksOf, useGame, viewMove } from '../lib/game.ts'
 import { cellHeats, HEAT_COLOR, opHeats } from '../lib/heat.ts'
 import { DICT, type Dict } from '../lib/i18n.ts'
+import { useReview } from '../lib/reviewStore.ts'
 import { href } from '../lib/router.ts'
 import { useStore } from '../lib/store.ts'
 
@@ -83,7 +85,7 @@ export function PlayPage() {
     )
   }
   const { map, state } = game
-  if (over) return <EndScreen map={map} state={state} t={t} onUndo={undo} />
+  if (over) return <EndScreen map={map} state={state} t={t} onUndo={undo} record={record} />
 
   const score = currentScore(map, state)
   const links = linksOf(map, state)
@@ -351,11 +353,13 @@ function EndScreen({
   state,
   t,
   onUndo,
+  record,
 }: {
   map: CompiledMap
   state: State
   t: Dict
   onUndo: () => void
+  record: GameRecord
 }) {
   const b = scoreBreakdown(map, state)
   const reached = b.total >= map.def.summit
@@ -402,6 +406,20 @@ function EndScreen({
           </dd>
         </dl>
       </section>
+      <button
+        type="button"
+        onClick={() => {
+          const { session } = useReview.getState()
+          const started =
+            session.players.length > 0 || session.dice.some((d) => d.y !== null || d.r !== null)
+          if (started && !window.confirm(t.confirmNewAnalysis)) return
+          useReview.getState().fromRecord(record, t.me)
+          window.location.hash = href({ name: 'review' })
+        }}
+        className="rounded-xl bg-ink px-3 py-3 text-center font-bold text-bg"
+      >
+        {t.analyseThisGame}
+      </button>
       <div className="flex gap-2">
         <button
           type="button"

@@ -6,7 +6,7 @@ import { createSolverPool, defaultPoolSize } from './solverPool.ts'
 let pool: SolverPool | null = null
 let poolKey = ''
 
-function getPool(map: CompiledMap, workers: number): SolverPool {
+export function getPool(map: CompiledMap, workers: number): SolverPool {
   const size = workers > 0 ? workers : defaultPoolSize()
   const key = `${map.def.id}@${map.def.rev}:${map.rules.linkRule}:${size}`
   if (pool && poolKey === key) return pool

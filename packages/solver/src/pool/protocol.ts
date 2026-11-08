@@ -21,11 +21,24 @@ export type SolverRequest =
       /** Root moves to solve exactly. */
       moves: Int32Array
     }
+  | {
+      t: 'hindsight'
+      job: number
+      /** Roll index of every turn (the whole game is known). */
+      rolls: Uint8Array
+      /** Start line (moves of every turn) or empty for a fresh beam-search start. */
+      start: Int32Array
+      seed: number
+      iterations: number
+      replicas: number
+      polish: number
+    }
 
 export type SolverResponse =
   | { t: 'ready'; job?: undefined }
   | { t: 'rollouts'; job: number; scores: Int32Array }
   | { t: 'exact'; job: number; values: Float64Array }
+  | { t: 'hindsight'; job: number; moves: Int32Array; score: number }
   | { t: 'error'; job?: number; message: string }
 
 export type WorkerLike = {

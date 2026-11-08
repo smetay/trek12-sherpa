@@ -1,5 +1,6 @@
 import { type CompiledMap, compileMap, getMapDef, stateFromCore } from '@trek12/engine'
 import { exactRootValues } from '../exact/endgame.ts'
+import { runHindsightJob } from '../hindsight/search.ts'
 import { crnRolloutScores } from '../mc/crn.ts'
 import { getPolicy } from '../policy/registry.ts'
 import type { SolverRequest, SolverResponse } from './protocol.ts'
@@ -23,6 +24,10 @@ export function createHandler(): (req: SolverRequest) => SolverResponse {
           job: req.job,
           values: exactRootValues(map, root, req.moves, req.moves.length),
         }
+      }
+      if (req.t === 'hindsight') {
+        const line = runHindsightJob(map, req.rolls, req)
+        return { t: 'hindsight', job: req.job, moves: line.moves, score: line.score }
       }
       const policy = getPolicy(req.policy)
       if (!policy) return { t: 'error', job: req.job, message: `unknown policy ${req.policy}` }

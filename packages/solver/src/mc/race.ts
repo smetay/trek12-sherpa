@@ -19,6 +19,11 @@ export type RaceOptions = {
   summit?: number
   /** Leave the exact endgame to the caller (`setExact`), e.g. to spread it over workers. */
   deferExact?: boolean
+  /**
+   * Moves that are never eliminated (post-game review: the move actually played must be measured
+   * as precisely as the leader, not dropped after the first round).
+   */
+  pinned?: readonly Move[]
 }
 
 export type Candidate = {
@@ -31,6 +36,8 @@ export type Candidate = {
   alive: boolean
   /** Exact value when the endgame was solved instead of sampled. */
   exact?: number
+  /** Never eliminated (see `RaceOptions.pinned`). */
+  pinned: boolean
 }
 
 export type RankedMove = {
@@ -104,6 +111,7 @@ export class Race {
         scores: new Int32Array(64),
         n: 0,
         alive: true,
+        pinned: options.pinned?.includes(this.moves[i]) ?? false,
       })
     }
     this.exactMode = count > 0 && useExact(emptyCells(map, this.candidates[0].child), count)
@@ -183,12 +191,14 @@ export class Race {
     const leader = alive.reduce((best, c) => (mean(c) > mean(best) ? c : best), alive[0])
     // Eliminate: the leader beats the candidate by more than 3 SE on paired rollouts.
     for (const c of alive) {
-      if (c === leader) continue
+      if (c === leader || c.pinned) continue
       const { d, se } = pairedDiff(c, leader)
       if (d + 3 * se < 0) c.alive = false
     }
     // Keep at most half of the field (min 3) so the race converges even when everything is close.
-    const survivors = this.candidates.filter((c) => c.alive).sort((a, b) => mean(b) - mean(a))
+    const survivors = this.candidates
+      .filter((c) => c.alive && !c.pinned)
+      .sort((a, b) => mean(b) - mean(a))
     const cap = Math.max(3, Math.ceil(alive.length / 2))
     survivors.slice(cap).forEach((c) => {
       c.alive = false

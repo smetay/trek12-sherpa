@@ -1,4 +1,6 @@
 import type { Ruleset } from '@trek12/engine'
+import type { Line } from '../hindsight/line.ts'
+import type { HindsightJob } from '../hindsight/search.ts'
 import { createHandler } from './handler.ts'
 import type { SolverRequest, SolverResponse, WorkerLike } from './protocol.ts'
 
@@ -90,6 +92,21 @@ export class SolverPool {
         req: { t: 'exact', job, core, moves },
         resolve: (res) => {
           if (res.t === 'exact') resolve(res.values)
+          else reject(new Error(res.t === 'error' ? res.message : 'unexpected response'))
+        },
+      })
+      this.pump()
+    })
+  }
+
+  /** Runs one hindsight job (see `HindsightSearch`) on a worker. */
+  hindsight(rolls: Uint8Array, job: HindsightJob): Promise<Line> {
+    const id = this.nextJob++
+    return new Promise((resolve, reject) => {
+      this.queue.push({
+        req: { t: 'hindsight', job: id, rolls, ...job },
+        resolve: (res) => {
+          if (res.t === 'hindsight') resolve({ moves: res.moves, score: res.score })
           else reject(new Error(res.t === 'error' ? res.message : 'unexpected response'))
         },
       })
