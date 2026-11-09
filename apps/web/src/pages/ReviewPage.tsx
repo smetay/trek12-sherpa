@@ -7,11 +7,17 @@ import {
   type State,
 } from '@trek12/engine'
 import { lineStates, type Rolls, rollsOf, SheetReconstructor } from '@trek12/solver'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { DiceLog, type Thumbs } from '../components/review/DiceLog.tsx'
 import { DiceScan } from '../components/review/DiceScan.tsx'
 import { BreakdownLine, LineStepper, SheetView } from '../components/review/LineView.tsx'
 import { OrderEntry } from '../components/review/OrderEntry.tsx'
+import {
+  DROP_RING,
+  imageFrom,
+  PhotoSource,
+  useImageDrop,
+} from '../components/review/PhotoSource.tsx'
 import { PlayerReport } from '../components/review/PlayerReport.tsx'
 import { SheetEditor } from '../components/review/SheetEditor.tsx'
 import { SheetScan } from '../components/review/SheetScan.tsx'
@@ -71,38 +77,6 @@ function useJob(kind: JobKind) {
   const queued = useJobs((s) => s.queued.includes(kind))
   const progress = useJobs((s) => (s.running === kind ? s.progress : 0))
   return { running, queued, progress }
-}
-
-/** Hidden file input opened by a button: the camera on a phone, the file picker on a computer. */
-function PhotoButton({
-  label,
-  onFile,
-  className,
-}: {
-  label: string
-  onFile: (file: File) => void
-  className?: string
-}) {
-  const input = useRef<HTMLInputElement>(null)
-  return (
-    <>
-      <button type="button" onClick={() => input.current?.click()} className={className}>
-        📷 {label}
-      </button>
-      <input
-        ref={input}
-        type="file"
-        accept="image/*"
-        capture="environment"
-        className="hidden"
-        onChange={(e) => {
-          const file = e.target.files?.[0]
-          e.target.value = ''
-          if (file) onFile(file)
-        }}
-      />
-    </>
-  )
 }
 
 function recordedScore(map: CompiledMap, rolls: Rolls, moves: number[]): number | null {
@@ -473,6 +447,9 @@ function PlayerCard({
   session,
   player,
   rolls,
+  incoming,
+  onIncomingTaken,
+  onActivate,
   t,
   lang,
 }: {
@@ -480,6 +457,11 @@ function PlayerCard({
   session: ReviewSession
   player: Player
   rolls: Rolls | null
+  /** An image pasted while this card was the last one used. */
+  incoming: File | null
+  onIncomingTaken: () => void
+  /** The card was touched or focused: it becomes the target of a pasted image. */
+  onActivate: () => void
   t: Dict
   lang: Lang
 }) {
@@ -487,6 +469,12 @@ function PlayerCard({
   const { setCell, updatePlayer, removePlayer, setChoice } = useReview()
   const job = useJob(`review:${player.id}`)
   const [scanFile, setScanFile] = useState<File | null>(null)
+  const drop = useImageDrop(setScanFile)
+  useEffect(() => {
+    if (!incoming) return
+    setScanFile(incoming)
+    onIncomingTaken()
+  }, [incoming, onIncomingTaken])
   const [thumbs, setThumbs] = useState<Map<number, string>>(new Map())
   const filled = player.sheet.filter((v) => v !== EMPTY_CELL).length
   const complete = filled === map.n
@@ -560,7 +548,13 @@ function PlayerCard({
   const canAnalyse = rolls !== null && complete && (player.moves !== null || diagnosis?.feasible)
 
   return (
-    <section className={`${card} flex flex-col gap-3`}>
+    <section
+      className={`${card} flex flex-col gap-3 ${drop.over ? DROP_RING : ''}`}
+      aria-label={player.name}
+      onPointerDownCapture={onActivate}
+      onFocusCapture={onActivate}
+      {...drop.handlers}
+    >
       <div className="flex items-center gap-2">
         <input
           value={player.name}
@@ -582,12 +576,10 @@ function PlayerCard({
 
       {(!revealed || !review?.done || showSheet) && (
         <>
-          <div className="flex items-center justify-between gap-2">
-            <p className="text-sm text-muted">
-              {complete ? t.cellsFilled(filled, map.n) : t.tapCellToWrite}
-            </p>
-            <PhotoButton label={t.scanSheet} onFile={setScanFile} className={secondary} />
-          </div>
+          <PhotoSource subject={`${t.scanSheet} (${player.name})`} onFile={setScanFile} t={t} />
+          <p className="text-sm text-muted">
+            {complete ? t.cellsFilled(filled, map.n) : t.tapCellToWrite}
+          </p>
           <SheetEditor
             map={map}
             sheet={player.sheet}
@@ -751,6 +743,23 @@ export function ReviewPage() {
   const { setMap, setDie, setDice, addPlayer, reset } = useReview()
   const [diceFile, setDiceFile] = useState<File | null>(null)
   const [thumbs, setThumbs] = useState<Thumbs>(new Map())
+  const diceDrop = useImageDrop(setDiceFile)
+  // A pasted image goes to the last section used: the dice log, or a player's sheet.
+  const pasteTarget = useRef('dice')
+  const [pasted, setPasted] = useState<{ id: string; file: File } | null>(null)
+  const takePasted = useCallback(() => setPasted(null), [])
+  useEffect(() => {
+    const onPaste = (e: ClipboardEvent) => {
+      const file = imageFrom(e.clipboardData)
+      if (!file) return
+      e.preventDefault()
+      const id = pasteTarget.current
+      if (useReview.getState().session.players.some((p) => p.id === id)) setPasted({ id, file })
+      else setDiceFile(file)
+    }
+    document.addEventListener('paste', onPaste)
+    return () => document.removeEventListener('paste', onPaste)
+  }, [])
 
   const map = useMemo(() => {
     const def = getMapDef(session.mapId) ?? MAPS[0]
@@ -809,13 +818,21 @@ export function ReviewPage() {
         </div>
       </section>
 
-      <section aria-labelledby="dice-h" className="flex flex-col gap-2">
-        <div className="flex items-center justify-between gap-2">
-          <h2 id="dice-h" className="font-semibold">
-            {t.rolls} <span className="font-normal text-muted">{t.rollsCount(filled)}</span>
-          </h2>
-          <PhotoButton label={t.scanDice} onFile={setDiceFile} className={secondary} />
-        </div>
+      <section
+        aria-labelledby="dice-h"
+        className={`flex flex-col gap-2 ${diceDrop.over ? DROP_RING : ''}`}
+        onPointerDownCapture={() => {
+          pasteTarget.current = 'dice'
+        }}
+        onFocusCapture={() => {
+          pasteTarget.current = 'dice'
+        }}
+        {...diceDrop.handlers}
+      >
+        <h2 id="dice-h" className="font-semibold">
+          {t.rolls} <span className="font-normal text-muted">{t.rollsCount(filled)}</span>
+        </h2>
+        <PhotoSource subject={t.scanDice} onFile={setDiceFile} t={t} />
         <DiceLog
           dice={session.dice}
           doubts={session.diceDoubts}
@@ -848,6 +865,11 @@ export function ReviewPage() {
             session={session}
             player={p}
             rolls={rolls}
+            incoming={pasted?.id === p.id ? pasted.file : null}
+            onIncomingTaken={takePasted}
+            onActivate={() => {
+              pasteTarget.current = p.id
+            }}
             t={t}
             lang={lang}
           />

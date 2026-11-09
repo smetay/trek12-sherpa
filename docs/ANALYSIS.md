@@ -152,6 +152,12 @@ can disturb a reading, and the consistency check against the dice catches most s
   keypad (the same die faces as during a game) jumps to the next missing roll as soon as both dice
   are set. Power users paste "54 16 55…". Sheets are typed with a 0–12 + ☹ pad that walks to the next
   empty circle; dangerous circles only offer 0–6 and ☹, as on paper.
+- **Take or import a photo.** Every scan offers *Photographier* (the camera opens directly on a
+  phone, `capture="environment"`) and *Importer* (no `capture`, so the system picker offers the
+  gallery and files: a photo taken earlier, or one received by message). On a computer an image can
+  also be dropped on the dice log or on a player's card, or pasted (Ctrl+V / ⌘V): it goes to the
+  section used last, the dice log by default. Whatever the source, the same reading and checking
+  screens follow.
 - **Scanning is an accelerator, never a trap.** Every read value can be corrected by the same tap
   as manual entry; low-confidence values are ringed in orange and the photo crop is shown next to the
   keypad, so checking costs one glance. A sheet that the dice cannot produce is caught before any
