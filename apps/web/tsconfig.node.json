@@ -1,6 +1,8 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
+    // e2e specs also contain callbacks that run in the page (page.evaluate): DOM types are real there.
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
     "types": ["node"]
   },
   "include": ["vite.config.ts", "playwright.config.ts", "e2e"]
